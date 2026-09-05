@@ -30,13 +30,17 @@
       </a>
 
       <nav class="header-nav">
-        <a href="/index.html" class="nav-link active">Explore</a>
+        <a href="/index.html" class="nav-link">Explore</a>
+        <a href="#map" class="nav-link" id="nav-link-map" onclick="window.mapController.showLatestMap(event)">🗺️ Latest Map</a>
         <a href="#how-it-works" class="nav-link" onclick="window.openHowItWorks(event)">Rating Method</a>
         <a href="/warden.html" class="nav-link">Warden Portal</a>
       </nav>
     </div>
 
     <div class="header-actions">
+      <button class="btn btn-primary btn-sm" id="btn-show-map-header" onclick="window.mapController.showLatestMap()" style="background:#4f46e5; border-color:#4338ca;">
+        🗺️ Latest Map
+      </button>
       <button class="btn btn-secondary btn-sm" id="btn-locate-header" onclick="window.mapController.handleLocateUser()">
         📍 Near Me
       </button>
@@ -123,6 +127,64 @@
       <!-- Screen Reader Live Announcer for Map Events -->
       <div id="map-live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
+      <!-- Top Map Status & Quick Action Banner -->
+      <div class="map-status-banner" id="map-status-banner">
+        <div class="map-status-pill">
+          <span class="status-live-dot"></span>
+          <span id="map-status-text">Live Map • 10 Hostels Active</span>
+        </div>
+        <button class="map-status-action" onclick="window.mapController.fitAllHostels()" title="Fit all hostels on map view">
+          Fit All 📍
+        </button>
+      </div>
+
+      <!-- Floating Map Theme Switcher -->
+      <div class="map-theme-switcher" id="map-theme-switcher" role="radiogroup" aria-label="Map Visual Theme">
+        <button class="map-theme-btn active" data-theme="voyager" onclick="window.mapController.setMapTheme('voyager')" title="Voyager - Rich roads and landmarks" aria-checked="true" role="radio">
+          <span>🗺️</span> Voyager
+        </button>
+        <button class="map-theme-btn" data-theme="light" onclick="window.mapController.setMapTheme('light')" title="Light - Crisp minimalist contrast" aria-checked="false" role="radio">
+          <span>☀️</span> Light
+        </button>
+        <button class="map-theme-btn" data-theme="dark" onclick="window.mapController.setMapTheme('dark')" title="Cyber Dark - Midnight high visibility" aria-checked="false" role="radio">
+          <span>🌙</span> Dark
+        </button>
+        <button class="map-theme-btn" data-theme="satellite" onclick="window.mapController.setMapTheme('satellite')" title="Satellite - High-res aerial imagery" aria-checked="false" role="radio">
+          <span>🛰️</span> Satellite
+        </button>
+      </div>
+
+      <!-- Quick Area Hubs Bar -->
+      <div class="map-area-hubs-bar" id="map-area-hubs-bar" role="toolbar" aria-label="Hyderabad Education & IT Hubs">
+        <button class="map-hub-chip active" onclick="window.mapController.flyToHub('ALL')" title="Show all hostels in Hyderabad">
+          📍 All Hubs
+        </button>
+        <button class="map-hub-chip" onclick="window.mapController.flyToHub('GACHIBOWLI')" title="Fly to Gachibowli & Financial District">
+          🎓 Gachibowli
+        </button>
+        <button class="map-hub-chip" onclick="window.mapController.flyToHub('MADHAPUR')" title="Fly to Madhapur & Hitec City">
+          🏢 Madhapur
+        </button>
+        <button class="map-hub-chip" onclick="window.mapController.flyToHub('JNTU')" title="Fly to JNTU & KPHB Metro">
+          📚 JNTU / KPHB
+        </button>
+        <button class="map-hub-chip" onclick="window.mapController.flyToHub('KONDAPUR')" title="Fly to Kondapur & Botanical Gardens">
+          🌿 Kondapur
+        </button>
+        <button class="map-hub-chip" onclick="window.mapController.flyToHub('NIZAMPET')" title="Fly to Nizampet & Bachupally">
+          🏛️ Nizampet
+        </button>
+      </div>
+
+      <!-- Dynamic Near Me Radius Floating Bar (Appears when GPS / Near Me active) -->
+      <div class="map-radius-bar" id="map-radius-bar" style="display:none;" aria-label="Distance Radius Filter">
+        <span class="radius-label">🎯 Near Me:</span>
+        <button class="radius-pill active" onclick="window.mapController.setSearchRadius(3)" data-radius="3">3 km</button>
+        <button class="radius-pill" onclick="window.mapController.setSearchRadius(5)" data-radius="5">5 km</button>
+        <button class="radius-pill" onclick="window.mapController.setSearchRadius(10)" data-radius="10">10 km</button>
+        <button class="radius-close-btn" onclick="window.mapController.clearUserLocation()" title="Clear near me filter">✕</button>
+      </div>
+
       <!-- Visual Keyboard Navigation Hint Bar -->
       <div class="map-keyboard-hint" id="map-keyboard-hint" aria-hidden="true">
         <span>Map:</span>
@@ -135,6 +197,12 @@
 
       <!-- Floating Map Action Buttons with Accessible ARIA Labels -->
       <div class="map-controls-group" role="toolbar" aria-label="Map Navigation and View Controls">
+        <button class="map-control-btn" id="map-fitall-btn" aria-label="Fit all hostels on map (F)" title="Fit all hostels (F)" onclick="window.mapController.fitAllHostels()" type="button">
+          🗺️
+        </button>
+        <button class="map-control-btn" id="map-expand-btn" aria-label="Toggle full screen map" title="Expand / split view" onclick="window.mapController.toggleFullMap()" type="button">
+          ⛶
+        </button>
         <button class="map-control-btn" id="map-zoomin-btn" aria-label="Zoom in on map (+)" title="Zoom in (+)" type="button">
           ➕
         </button>

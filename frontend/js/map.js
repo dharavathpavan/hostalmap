@@ -1,13 +1,61 @@
 /**
  * HOSTEL MAP — Map & Discovery Interactive Controller
- * Powered by Google Maps Platform (AdvancedMarkerElement)
+ * Powered by Google Maps Platform & Interactive Leaflet Engine
  */
+
+const MAP_THEMES = {
+  voyager: {
+    name: 'Voyager',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+    googleMapTypeId: 'roadmap',
+  },
+  light: {
+    name: 'Clean Light',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+    googleMapTypeId: 'roadmap',
+  },
+  dark: {
+    name: 'Cyber Dark',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+    googleMapTypeId: 'roadmap',
+  },
+  satellite: {
+    name: 'Satellite Aerial',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; High-Res Aerial Imagery',
+    maxZoom: 18,
+    googleMapTypeId: 'satellite',
+  },
+};
+
+const HYDERABAD_HUBS = {
+  ALL: { name: 'All Hyderabad', lat: 17.4435, lng: 78.3582, zoom: 12 },
+  GACHIBOWLI: { name: 'Gachibowli & DLF', lat: 17.4435, lng: 78.3582, zoom: 14.5 },
+  MADHAPUR: { name: 'Madhapur & Cyber Towers', lat: 17.4486, lng: 78.3908, zoom: 14.5 },
+  JNTU: { name: 'JNTU & KPHB Metro', lat: 17.4942, lng: 78.3912, zoom: 14.5 },
+  KONDAPUR: { name: 'Kondapur & Botanical', lat: 17.4615, lng: 78.3610, zoom: 14.5 },
+  NIZAMPET: { name: 'Nizampet & Bachupally', lat: 17.5140, lng: 78.3810, zoom: 14.5 },
+};
 
 class HostelMapController {
   constructor() {
     this.engine = 'none'; // 'google' | 'leaflet'
     this.map = null; // Google Maps Map instance
     this.leafletMap = null; // Leaflet Map instance
+    this.leafletTileLayer = null;
+    this.currentTheme = localStorage.getItem('hostelmap_theme') || 'voyager';
+    this.searchRadiusKm = null;
+    this.radiusCircle = null;
+    this.userMarker = null;
     this.markers = new Map(); // hostelId -> marker instance
     this.clusterMarkers = new Map(); // clusterId -> marker instance
     this.clusters = []; // active calculated cluster groupings
@@ -32,9 +80,30 @@ class HostelMapController {
   async init() {
     this.bindDOMEvents();
     this.setupResizeObserver();
+    this.initThemeUI();
     await this.loadConfigAndMap();
     await this.loadHostels();
     this.renderFacilitiesFilter();
+
+    // Auto switch to map if URL hash is #map or query is view=map
+    if (window.location.hash === '#map' || window.location.search.includes('view=map')) {
+      this.switchToMapView();
+      this.invalidateMapSize();
+      setTimeout(() => this.updateMapMarkers(true), 250);
+    }
+  }
+
+  initThemeUI() {
+    document.querySelectorAll('.map-theme-btn').forEach((btn) => {
+      const isMatch = btn.dataset.theme === this.currentTheme;
+      btn.classList.toggle('active', isMatch);
+      btn.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+    });
+    const pane = document.getElementById('map-pane');
+    if (pane) {
+      pane.classList.remove('theme-light', 'theme-dark', 'theme-satellite', 'theme-voyager');
+      pane.classList.add(`theme-${this.currentTheme}`);
+    }
   }
 
   bindDOMEvents() {
@@ -226,6 +295,43 @@ class HostelMapController {
     }
     this.announceToScreenReader('Switched to interactive map view.');
     this.invalidateMapSize();
+  }
+
+  fitAllHostels() {
+    if (!this.hostels || this.hostels.length === 0) {
+      this.loadHostels();
+      return;
+    }
+    this.invalidateMapSize();
+    this.updateMapMarkers(true);
+    this.announceToScreenReader(`Fitted all ${this.hostels.length} hostels to current map viewport.`);
+    showToast(`🗺️ Fitted all ${this.hostels.length} hostels on map`, 'info');
+  }
+
+  toggleFullMap() {
+    const layout = document.getElementById('discovery-layout');
+    if (!layout) return;
+    const isFull = layout.classList.toggle('full-map');
+    const expandBtn = document.getElementById('map-expand-btn');
+    if (expandBtn) {
+      expandBtn.innerHTML = isFull ? '🗗' : '⛶';
+      expandBtn.setAttribute('title', isFull ? 'Restore split view' : 'Expand full map');
+    }
+    this.invalidateMapSize();
+    setTimeout(() => {
+      this.updateMapMarkers(true);
+    }, 150);
+  }
+
+  async showLatestMap(e) {
+    if (e) e.preventDefault();
+    this.switchToMapView();
+    await this.loadHostels();
+    this.invalidateMapSize();
+    setTimeout(() => {
+      this.updateMapMarkers(true);
+    }, 150);
+    showToast(`Showing latest map with ${this.hostels.length} hostels across Hyderabad`, 'success');
   }
 
   switchToListView() {
@@ -596,9 +702,11 @@ class HostelMapController {
       attributionControl: true,
     });
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+    const themeConfig = MAP_THEMES[this.currentTheme] || MAP_THEMES.voyager;
+    this.leafletTileLayer = L.tileLayer(themeConfig.url, {
+      maxZoom: themeConfig.maxZoom,
+      subdomains: themeConfig.subdomains || 'abc',
+      attribution: themeConfig.attribution,
     }).addTo(this.leafletMap);
 
     this.leafletMap.on('click', () => {
@@ -617,6 +725,131 @@ class HostelMapController {
 
     this.invalidateMapSize();
     this.updateMapMarkers(true);
+  }
+
+  setMapTheme(themeName) {
+    if (!MAP_THEMES[themeName]) return;
+    this.currentTheme = themeName;
+    localStorage.setItem('hostelmap_theme', themeName);
+    this.initThemeUI();
+
+    const themeConfig = MAP_THEMES[themeName];
+
+    if (this.engine === 'leaflet' && this.leafletMap) {
+      if (this.leafletTileLayer) {
+        this.leafletMap.removeLayer(this.leafletTileLayer);
+      }
+      this.leafletTileLayer = L.tileLayer(themeConfig.url, {
+        maxZoom: themeConfig.maxZoom,
+        subdomains: themeConfig.subdomains || 'abc',
+        attribution: themeConfig.attribution,
+      }).addTo(this.leafletMap);
+    } else if (this.engine === 'google' && this.map) {
+      this.map.setMapTypeId(themeConfig.googleMapTypeId || 'roadmap');
+    }
+
+    showToast(`🎨 Map theme set to ${themeConfig.name}`, 'info');
+    this.announceToScreenReader(`Map visual theme switched to ${themeConfig.name}`);
+  }
+
+  flyToHub(hubKey) {
+    const hub = HYDERABAD_HUBS[hubKey];
+    if (!hub) return;
+
+    // Update active state in hub chips
+    document.querySelectorAll('.map-hub-chip').forEach((chip) => {
+      const isMatch = chip.getAttribute('onclick')?.includes(hubKey);
+      chip.classList.toggle('active', isMatch);
+    });
+
+    if (hubKey === 'ALL') {
+      this.fitAllHostels();
+      return;
+    }
+
+    if (this.engine === 'leaflet' && this.leafletMap) {
+      this.leafletMap.flyTo([hub.lat, hub.lng], hub.zoom, { duration: 1.2 });
+    } else if (this.engine === 'google' && this.map) {
+      this.map.panTo({ lat: hub.lat, lng: hub.lng });
+      this.map.setZoom(Math.round(hub.zoom));
+    }
+
+    showToast(`📍 Centered on ${hub.name}`, 'info');
+    this.announceToScreenReader(`Flew map camera to ${hub.name} educational hub`);
+  }
+
+  setSearchRadius(radiusKm) {
+    this.searchRadiusKm = radiusKm;
+    document.querySelectorAll('.radius-pill').forEach((pill) => {
+      const r = parseInt(pill.dataset.radius, 10);
+      pill.classList.toggle('active', r === radiusKm);
+    });
+
+    if (!this.userLocation) {
+      // Default to Hyderabad central hub if user hasn't located
+      this.userLocation = { lat: 17.4435, lng: 78.3582 };
+    }
+
+    this.drawRadiusCircle();
+    this.loadHostels();
+    showToast(`🎯 Showing hostels within ${radiusKm} km radius`, 'info');
+  }
+
+  drawRadiusCircle() {
+    if (!this.userLocation || !this.searchRadiusKm) return;
+
+    const center = this.userLocation;
+    const radiusMeters = this.searchRadiusKm * 1000;
+
+    if (this.engine === 'leaflet' && this.leafletMap) {
+      if (this.radiusCircle) {
+        this.leafletMap.removeLayer(this.radiusCircle);
+      }
+      this.radiusCircle = L.circle([center.lat, center.lng], {
+        radius: radiusMeters,
+        color: '#6366f1',
+        weight: 2,
+        fillColor: '#818cf8',
+        fillOpacity: 0.12,
+        dashArray: '6, 6',
+      }).addTo(this.leafletMap);
+
+      this.leafletMap.fitBounds(this.radiusCircle.getBounds(), { padding: [40, 40] });
+    } else if (this.engine === 'google' && this.map && window.google?.maps?.Circle) {
+      if (this.radiusCircle) {
+        this.radiusCircle.setMap(null);
+      }
+      this.radiusCircle = new google.maps.Circle({
+        strokeColor: '#6366f1',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#818cf8',
+        fillOpacity: 0.15,
+        map: this.map,
+        center: center,
+        radius: radiusMeters,
+      });
+      this.map.fitBounds(this.radiusCircle.getBounds());
+    }
+  }
+
+  clearUserLocation() {
+    this.userLocation = null;
+    this.searchRadiusKm = null;
+    if (this.radiusCircle) {
+      if (this.engine === 'leaflet' && this.leafletMap) {
+        this.leafletMap.removeLayer(this.radiusCircle);
+      } else if (this.engine === 'google' && this.radiusCircle.setMap) {
+        this.radiusCircle.setMap(null);
+      }
+      this.radiusCircle = null;
+    }
+    const radiusBar = document.getElementById('map-radius-bar');
+    if (radiusBar) radiusBar.style.display = 'none';
+
+    this.loadHostels();
+    this.fitAllHostels();
+    showToast('Cleared location radius filter', 'info');
   }
 
   async loadHostels() {
@@ -649,8 +882,36 @@ class HostelMapController {
 
       this.hostels = res.data || [];
 
+      // If user location is active, calculate distances and filter by radius
+      if (this.userLocation) {
+        this.hostels.forEach((h) => {
+          const lat = parseFloat(h.latitude);
+          const lng = parseFloat(h.longitude);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            const d = this.calculateDistanceKm(
+              this.userLocation.lat,
+              this.userLocation.lng,
+              lat,
+              lng
+            );
+            h.distanceKm = parseFloat(d.toFixed(1));
+          }
+        });
+
+        if (this.searchRadiusKm) {
+          this.hostels = this.hostels.filter((h) => h.distanceKm !== undefined && h.distanceKm <= this.searchRadiusKm);
+        }
+
+        // Sort by closest first
+        this.hostels.sort((a, b) => (a.distanceKm || 999) - (b.distanceKm || 999));
+      }
+
       if (countDisplay) {
-        countDisplay.innerText = `${this.hostels.length} ${this.hostels.length === 1 ? 'hostel' : 'hostels'} found`;
+        if (this.userLocation && this.searchRadiusKm) {
+          countDisplay.innerText = `${this.hostels.length} ${this.hostels.length === 1 ? 'hostel' : 'hostels'} within ${this.searchRadiusKm}km`;
+        } else {
+          countDisplay.innerText = `${this.hostels.length} ${this.hostels.length === 1 ? 'hostel' : 'hostels'} found`;
+        }
       }
 
       this.renderHostelList();
@@ -698,7 +959,7 @@ class HostelMapController {
       .map((h) => {
         const isSaved = savedIds.includes(h.id);
         const isCompared = compareIds.includes(h.id);
-        const photoUrl = (h.photos && h.photos[0]) ? h.photos[0] : defaultThumb;
+        const photoUrl = h.coverImage || (h.images && h.images[0]) || (h.photos && h.photos[0]) || defaultThumb;
 
         const typeClass =
           h.hostelType === 'BOYS'
@@ -782,6 +1043,20 @@ class HostelMapController {
       .join('');
   }
 
+  calculateDistanceKm(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
   latLngToPixel(lat, lng, zoom) {
     const sinLat = Math.sin((lat * Math.PI) / 180);
     const clampedSin = Math.min(Math.max(sinLat, -0.9999), 0.9999);
@@ -842,7 +1117,15 @@ class HostelMapController {
 
   createPricePinElement(h, onSelect) {
     const pricePin = document.createElement('div');
-    pricePin.className = `custom-map-marker ${this.activeHostelId === h.id ? 'active' : ''}`;
+    const genderIcon = h.hostelType === 'BOYS' ? '🚹' : h.hostelType === 'GIRLS' ? '🚺' : '👥';
+    const typeClass =
+      h.hostelType === 'BOYS'
+        ? 'marker-type-boys'
+        : h.hostelType === 'GIRLS'
+        ? 'marker-type-girls'
+        : 'marker-type-coliving';
+
+    pricePin.className = `custom-map-marker ${typeClass} ${this.activeHostelId === h.id ? 'active' : ''}`;
     pricePin.id = `map-marker-${h.id}`;
     pricePin.setAttribute('role', 'button');
     pricePin.setAttribute('tabindex', '0');
@@ -852,8 +1135,10 @@ class HostelMapController {
     );
     pricePin.setAttribute('aria-expanded', this.activeHostelId === h.id ? 'true' : 'false');
     pricePin.innerHTML = `
-      <span>₹${(h.monthlyRent / 1000).toFixed(1)}k</span>
-      <div class="marker-dot"></div>
+      <span class="marker-gender-icon">${genderIcon}</span>
+      <span class="marker-price-val">₹${(h.monthlyRent / 1000).toFixed(1)}k</span>
+      <span class="marker-star-tag">★ ${(h.rating > 0 ? h.rating.toFixed(1) : '4.5')}</span>
+      ${h.verified ? '<span style="color:#10b981; font-weight:800; font-size:0.75rem;" title="Verified PG">✓</span>' : ''}
     `;
 
     pricePin.addEventListener('click', (e) => {
@@ -1029,6 +1314,12 @@ class HostelMapController {
         countText += ` • ${multiClusterCount} clusters`;
       }
       countDisplay.innerText = countText;
+    }
+
+    // Update map status banner
+    const mapStatusText = document.getElementById('map-status-text');
+    if (mapStatusText && this.hostels) {
+      mapStatusText.innerText = `Live Map • ${this.hostels.length} Hostels Active`;
     }
   }
 
@@ -1268,71 +1559,78 @@ class HostelMapController {
       "Decent food menu with good Wi-Fi speed for late night study. Very close to bus stop.";
 
     const isCompared = this.getCompareHostelIds().includes(hostel.id);
+    const photoUrl = hostel.coverImage || (hostel.images && hostel.images[0]) || (hostel.photos && hostel.photos[0]) || 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=400&q=80';
 
     body.innerHTML = `
       <div class="active-selection-layout">
-        <div class="active-selection-main">
-          <span class="active-selection-tagline">
-            ${hostel.verified ? '✓ VERIFIED' : 'STUDENT PG'} • ${hostel.area.toUpperCase()}
-          </span>
-          <h2 class="active-selection-title">${hostel.name}</h2>
-          
-          <div class="active-selection-grid">
-            <div>
-              <div class="active-col-header">Today's Menu</div>
-              <div class="active-food-list">
-                <div class="active-food-row">
-                  <span>Breakfast</span>
-                  <span class="food-val" title="${breakfast}">${breakfast.split(',')[0]}</span>
-                </div>
-                <div class="active-food-row">
-                  <span>Lunch</span>
-                  <span class="food-val" title="${lunch}">${lunch.split(',')[0]}</span>
-                </div>
-                <div class="active-food-row">
-                  <span>Dinner</span>
-                  <span class="food-val" title="${dinner}">${dinner.split(',')[0]}</span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div class="active-col-header">Experience</div>
-              <div class="active-exp-list">
-                <div class="active-exp-item">
-                  <div class="active-exp-header">
-                    <span>Wi-Fi Reliability</span>
-                    <span>${wifiScore}%</span>
+        <div style="display:flex; gap:1rem; align-items:flex-start; flex:1;">
+          <div style="width:115px; min-width:115px; height:95px; border-radius:var(--radius-sm); overflow:hidden; position:relative; background:#e2e8f0; flex-shrink:0;">
+            <img src="${photoUrl}" alt="${hostel.name}" style="width:100%; height:100%; object-fit:cover;" />
+            <span style="position:absolute; bottom:3px; left:3px; background:rgba(0,0,0,0.68); color:#fff; font-size:0.65rem; font-weight:700; padding:1px 4px; border-radius:2px;">📷 Photos</span>
+          </div>
+          <div class="active-selection-main" style="flex:1;">
+            <span class="active-selection-tagline">
+              ${hostel.verified ? '✓ VERIFIED' : 'STUDENT PG'} • ${hostel.area.toUpperCase()}
+            </span>
+            <h2 class="active-selection-title">${hostel.name}</h2>
+            
+            <div class="active-selection-grid">
+              <div>
+                <div class="active-col-header">Today's Menu</div>
+                <div class="active-food-list">
+                  <div class="active-food-row">
+                    <span>Breakfast</span>
+                    <span class="food-val" title="${breakfast}">${breakfast.split(',')[0]}</span>
                   </div>
-                  <div class="active-progress-bg">
-                    <div class="active-progress-bar" style="width: ${wifiScore}%; background: var(--primary);"></div>
+                  <div class="active-food-row">
+                    <span>Lunch</span>
+                    <span class="food-val" title="${lunch}">${lunch.split(',')[0]}</span>
                   </div>
-                </div>
-                <div class="active-exp-item">
-                  <div class="active-exp-header">
-                    <span>Food Taste</span>
-                    <span>${foodScore}%</span>
-                  </div>
-                  <div class="active-progress-bg">
-                    <div class="active-progress-bar" style="width: ${foodScore}%; background: #10b981;"></div>
-                  </div>
-                </div>
-                <div class="active-exp-item">
-                  <div class="active-exp-header">
-                    <span>Cleanliness</span>
-                    <span>${cleanScore}%</span>
-                  </div>
-                  <div class="active-progress-bg">
-                    <div class="active-progress-bar" style="width: ${cleanScore}%; background: #6366f1;"></div>
+                  <div class="active-food-row">
+                    <span>Dinner</span>
+                    <span class="food-val" title="${dinner}">${dinner.split(',')[0]}</span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <div class="active-col-header">Student Review</div>
-              <p class="active-review-quote">"${sampleQuote}"</p>
-              <div class="active-review-author">— Verified Resident</div>
+              <div>
+                <div class="active-col-header">Experience</div>
+                <div class="active-exp-list">
+                  <div class="active-exp-item">
+                    <div class="active-exp-header">
+                      <span>Wi-Fi Reliability</span>
+                      <span>${wifiScore}%</span>
+                    </div>
+                    <div class="active-progress-bg">
+                      <div class="active-progress-bar" style="width: ${wifiScore}%; background: var(--primary);"></div>
+                    </div>
+                  </div>
+                  <div class="active-exp-item">
+                    <div class="active-exp-header">
+                      <span>Food Taste</span>
+                      <span>${foodScore}%</span>
+                    </div>
+                    <div class="active-progress-bg">
+                      <div class="active-progress-bar" style="width: ${foodScore}%; background: #10b981;"></div>
+                    </div>
+                  </div>
+                  <div class="active-exp-item">
+                    <div class="active-exp-header">
+                      <span>Cleanliness</span>
+                      <span>${cleanScore}%</span>
+                    </div>
+                    <div class="active-progress-bg">
+                      <div class="active-progress-bar" style="width: ${cleanScore}%; background: #6366f1;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div class="active-col-header">Student Review</div>
+                <p class="active-review-quote">"${sampleQuote}"</p>
+                <div class="active-review-author">— Verified Resident</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1504,22 +1802,11 @@ class HostelMapController {
           L.marker([latitude, longitude], { icon: userIcon, title: 'Your Location' }).addTo(this.leafletMap);
         }
 
-        try {
-          const res = await API.getNearbyHostels(latitude, longitude, 20);
-          this.hostels = res.data || [];
-          const countDisplay = document.getElementById('results-count');
-          if (countDisplay) {
-            countDisplay.innerText = `${this.hostels.length} hostels near you`;
-          }
-          this.renderHostelList();
-          this.updateMapMarkers();
-          showToast(`Found ${this.hostels.length} hostels within 20km!`, 'success');
-          this.announceToScreenReader(`Found ${this.hostels.length} hostels within 20 kilometers of your location. Map centered on your position.`);
-        } catch (err) {
-          console.error(err);
-          showToast('Failed to fetch nearby hostels', 'error');
-          this.announceToScreenReader('Failed to fetch nearby hostels');
-        }
+        const radiusBar = document.getElementById('map-radius-bar');
+        if (radiusBar) radiusBar.style.display = 'flex';
+
+        this.setSearchRadius(5);
+        this.announceToScreenReader('Located your position and enabled 5 kilometer radius filter');
       },
       (err) => {
         console.warn('Geolocation denied or failed:', err);

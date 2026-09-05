@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin & Warden Portal | Hostel Map</title>
+  <meta name="description" content="Hostel management, review moderation, and daily food updates." />
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/responsive.css" />
+
+  <style>
+    .admin-container {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1.5rem 5rem;
+    }
+    .admin-nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 2px solid var(--border-subtle);
+      margin-bottom: 2rem;
+      overflow-x: auto;
+    }
+    .admin-nav-tab {
+      padding: 0.75rem 1.25rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all var(--transition-fast);
+    }
+    .admin-nav-tab:hover {
+      color: var(--text-primary);
+    }
+    .admin-nav-tab.active {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .admin-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .admin-stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .admin-stat-val {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+    .admin-stat-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .admin-table-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow-x: auto;
+    }
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .admin-table th, .admin-table td {
+      padding: 0.85rem 1.2rem;
+      border-bottom: 1px solid var(--border-light);
+      text-align: left;
+    }
+    .admin-table th {
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .form-control {
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 0.92rem;
+      background: var(--bg-surface);
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <a href="/index.html" class="header-brand">
+      <div class="brand-icon">H</div>
+      <div>
+        <div>Hostel Map Admin</div>
+        <div style="font-size:0.7rem; font-weight:500; color:var(--text-muted); line-height:1;">Moderation & Management</div>
+      </div>
+    </a>
+
+    <nav class="header-nav">
+      <a href="/index.html" class="nav-link">← Return to Public Discovery Map</a>
+    </nav>
+
+    <div class="header-actions">
+      <button id="admin-logout-btn" class="btn btn-secondary btn-sm">
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-container">
+
+    <!-- 1. Authentication Login Card -->
+    <div id="admin-login-section" style="max-width:420px; margin:4rem auto; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:2rem; box-shadow:var(--shadow-md);">
+      <h2 style="font-size:1.4rem; font-weight:700; margin-bottom:0.5rem; text-align:center;">Portal Login</h2>
+      <p style="font-size:0.85rem; color:var(--text-muted); text-align:center; margin-bottom:1.5rem;">
+        Authenticate to moderate reviews, publish food menus, or add verified hostels.
+      </p>
+
+      <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; padding:0.75rem; font-size:0.82rem; color:#1e40af; margin-bottom:1.25rem;">
+        <strong>Demo Credentials:</strong><br>
+        Username: <code>admin</code><br>
+        Password: <code>admin123</code>
+      </div>
+
+      <form id="admin-login-form">
+        <div class="form-group">
+          <label for="admin-user">Username</label>
+          <input type="text" id="admin-user" name="username" class="form-control" value="admin" required />
+        </div>
+        <div class="form-group">
+          <label for="admin-pass">Password</label>
+          <input type="password" id="admin-pass" name="password" class="form-control" value="admin123" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem; margin-top:0.5rem;">
+          Sign In to Admin Portal
+        </button>
+      </form>
+    </div>
+
+    <!-- 2. Admin Dashboard (Protected) -->
+    <div id="admin-dashboard-section" style="display:none;">
+
+      <!-- Tabs Navigation -->
+      <div class="admin-nav-tabs">
+        <button class="admin-nav-tab active" data-admin-tab="stats">📊 Metrics</button>
+        <button class="admin-nav-tab" data-admin-tab="reviews">🛡️ Review Moderation</button>
+        <button class="admin-nav-tab" data-admin-tab="reports">🚩 Flagged Reports</button>
+        <button class="admin-nav-tab" data-admin-tab="food">🍲 Publish Daily Food</button>
+        <button class="admin-nav-tab" data-admin-tab="hostels">🏠 Hostels Inventory</button>
+        <button class="admin-nav-tab" data-admin-tab="add-hostel">➕ Add New Hostel</button>
+      </div>
+
+      <!-- Tab 1: Stats -->
+      <div class="admin-tab-pane" id="tab-stats">
+        <div class="admin-stats-grid">
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="stat-hostels">0</div>
+            <div class="admin-stat-label">Active Hostels</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="stat-reviews">0</div>
+            <div class="admin-stat-label">Student Reviews</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="stat-pending-reviews" style="color:#f59e0b;">0</div>
+            <div class="admin-stat-label">Pending Reviews</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="stat-pending-reports" style="color:#ef4444;">0</div>
+            <div class="admin-stat-label">Active Reports</div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="admin-stat-val" id="stat-food" style="color:#10b981;">0</div>
+            <div class="admin-stat-label">Daily Food Menus</div>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:1.5rem;">
+          <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.75rem;">Community Integrity Guidelines</h3>
+          <ul style="color:var(--text-secondary); font-size:0.9rem; line-height:1.6; margin-left:1.25rem;">
+            <li><strong>Review Moderation:</strong> Verify reviews for genuine student constructive feedback. Auto-remove hate speech, phone numbers, or promotional spam.</li>
+            <li><strong>Food Verification:</strong> Warden daily food updates ensure students know whether special dishes (biryani, roti) are served today.</li>
+            <li><strong>Hostel Verification:</strong> Mark hostels as "Verified" only after physically verifying room photos, water supply, and security logs.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Tab 2: Review Moderation -->
+      <div class="admin-tab-pane" id="tab-reviews" style="display:none;">
+        <div class="admin-table-card">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Hostel</th>
+                <th>Score</th>
+                <th>Comment</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-reviews-table-body">
+              <!-- Injected via admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Flagged Reports -->
+      <div class="admin-tab-pane" id="tab-reports" style="display:none;">
+        <div class="admin-table-card">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Target</th>
+                <th>Report Reason</th>
+                <th>Original Comment</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-reports-table-body">
+              <!-- Injected via admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 4: Publish Daily Food -->
+      <div class="admin-tab-pane" id="tab-food" style="display:none;">
+        <div style="max-width:650px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:2rem; box-shadow:var(--shadow-sm);">
+          <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Publish Today's Food Menu</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">
+            Keep prospective students and residents updated on today's meals.
+          </p>
+
+          <form id="admin-food-form">
+            <div class="form-group">
+              <label for="food-hostel-select">Select Hostel *</label>
+              <select id="food-hostel-select" name="hostelId" class="form-control" required>
+                <!-- Populated via JS -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="food-date">Date *</label>
+              <input type="date" id="food-date" name="foodDate" class="form-control" value="" required />
+            </div>
+
+            <div class="form-group">
+              <label for="food-breakfast">Breakfast Menu *</label>
+              <input type="text" id="food-breakfast" name="breakfast" class="form-control" placeholder="e.g. Masala Dosa + Sambar + Filter Coffee" required />
+            </div>
+
+            <div class="form-group">
+              <label for="food-lunch">Lunch Menu *</label>
+              <input type="text" id="food-lunch" name="lunch" class="form-control" placeholder="e.g. Rice + Tomato Dal + Chicken Curry / Paneer + Curd" required />
+            </div>
+
+            <div class="form-group">
+              <label for="food-dinner">Dinner Menu *</label>
+              <input type="text" id="food-dinner" name="dinner" class="form-control" placeholder="e.g. Phulkas + Aloo Gobi + Rice + Rasam" required />
+            </div>
+
+            <div class="form-group">
+              <label for="food-image">Photo URL (Optional)</label>
+              <input type="url" id="food-image" name="imageUrl" class="form-control" placeholder="https://images.unsplash.com/photo-..." />
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:0.75rem;">
+              Publish Daily Food Menu
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Tab 5: Hostels Table -->
+      <div class="admin-tab-pane" id="tab-hostels" style="display:none;">
+        <div class="admin-table-card">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Hostel Name</th>
+                <th>Type</th>
+                <th>Area</th>
+                <th>Rent</th>
+                <th>Rating</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-hostels-table-body">
+              <!-- Injected via admin.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 6: Add New Hostel Form -->
+      <div class="admin-tab-pane" id="tab-add-hostel" style="display:none;">
+        <div style="max-width:720px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:2rem; box-shadow:var(--shadow-sm);">
+          <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:1.5rem;">Add New Hostel to Map</h3>
+
+          <form id="admin-add-hostel-form">
+            <div class="form-group">
+              <label>Hostel Name *</label>
+              <input type="text" name="name" class="form-control" placeholder="e.g. Sai Balaji Luxury PG" required />
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+              <div class="form-group">
+                <label>Hostel Type *</label>
+                <select name="hostelType" class="form-control" required>
+                  <option value="BOYS">Boys Hostel</option>
+                  <option value="GIRLS">Girls PG</option>
+                  <option value="CO_LIVING">Co-Living</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Monthly Rent (₹) *</label>
+                <input type="number" name="monthlyRent" class="form-control" placeholder="8500" required />
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+              <div class="form-group">
+                <label>Security Deposit (₹)</label>
+                <input type="number" name="deposit" class="form-control" placeholder="4000" />
+              </div>
+
+              <div class="form-group">
+                <label>Pincode</label>
+                <input type="text" name="pincode" class="form-control" placeholder="500032" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Address *</label>
+              <input type="text" name="address" class="form-control" placeholder="Plot 45, Near Cyber Towers" required />
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+              <div class="form-group">
+                <label>Area / Neighborhood *</label>
+                <input type="text" name="area" class="form-control" placeholder="Madhapur / Gachibowli" required />
+              </div>
+
+              <div class="form-group">
+                <label>City *</label>
+                <input type="text" name="city" class="form-control" value="Hyderabad" required />
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+              <div class="form-group">
+                <label>Latitude (GPS) *</label>
+                <input type="number" step="any" name="latitude" class="form-control" placeholder="17.4435" required />
+              </div>
+
+              <div class="form-group">
+                <label>Longitude (GPS) *</label>
+                <input type="number" step="any" name="longitude" class="form-control" placeholder="78.3582" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Description</label>
+              <textarea name="description" rows="3" class="form-control" placeholder="Key facilities, study hours, food highlights..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label>Available Facilities</label>
+              <div id="admin-facilities-checkboxes" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:0.5rem; background:var(--bg-subtle); padding:1rem; border-radius:8px;">
+                <!-- Populated via JS -->
+              </div>
+            </div>
+
+            <div style="display:flex; gap:2rem; margin-bottom:1.5rem;">
+              <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+                <input type="checkbox" name="foodAvailable" checked />
+                <span>Food Included</span>
+              </label>
+
+              <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer;">
+                <input type="checkbox" name="verified" />
+                <span>Physically Verified</span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%; padding:0.85rem;">
+              Create & List Hostel on Map
+            </button>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast-container"></div>
+
+  <!-- JavaScript Bundle -->
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/admin.js"></script>
+  <script>
+    document.getElementById('food-date').value = new Date().toISOString().split('T')[0];
+  </script>
+</body>
+</html>

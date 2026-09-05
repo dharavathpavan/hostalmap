@@ -1,0 +1,6 @@
+{
+  "name": "Hostel Map",
+  "description": "Student hostel discovery platform with interactive map, real student reviews, daily food updates, and experience ratings.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

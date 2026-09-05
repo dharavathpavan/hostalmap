@@ -1,0 +1,208 @@
+/* ==========================================================
+   HOSTEL MAP — Responsive Styles
+   Mobile-first optimization with 44px touch targets
+   ========================================================== */
+
+/* Mobile view toggle button (Hidden on desktop) */
+.mobile-view-toggle {
+  display: none;
+}
+
+.mobile-quick-map-btn {
+  display: none;
+}
+
+/* Tablet Layout (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hostel-explorer-pane {
+    width: 360px;
+    min-width: 320px;
+    max-width: 390px;
+  }
+  .map-pane {
+    flex: 1;
+    display: block !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-quick-map-btn {
+    display: flex;
+    width: 100%;
+    margin-top: 0.25rem;
+    justify-content: center;
+    gap: 0.4rem;
+    font-weight: 700;
+  }
+
+  /* Site Header */
+  .site-header {
+    padding: 0 1rem;
+  }
+
+  .header-nav {
+    display: none; /* Collapsible or accessible via mobile sheet */
+  }
+
+  /* Split layout behaves as stacked or toggleable on mobile */
+  .discovery-layout {
+    flex-direction: column;
+    height: calc(100vh - var(--header-height));
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Default on mobile: Map on top (42vh), list below */
+  .discovery-layout .map-pane {
+    height: 42vh;
+    min-height: 220px;
+    flex: none;
+    width: 100%;
+    position: relative;
+    display: block;
+    z-index: 5;
+  }
+
+  .discovery-layout .hostel-explorer-pane {
+    flex: 1;
+    width: 100%;
+    min-width: unset;
+    height: auto;
+    position: relative;
+    z-index: 10;
+    padding: 0.85rem 1rem;
+    overflow-y: auto;
+    display: flex;
+  }
+
+  /* View Mode Switching on Mobile: Full Map View */
+  .discovery-layout.view-map .hostel-explorer-pane {
+    display: none;
+  }
+
+  .discovery-layout.view-map .map-pane {
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: block;
+  }
+
+  /* View Mode Switching on Mobile: Full List View */
+  .discovery-layout.view-list .map-pane {
+    display: none;
+  }
+
+  .discovery-layout.view-list .hostel-explorer-pane {
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: flex;
+  }
+
+  /* Floating Bottom Switcher on Mobile */
+  .mobile-view-toggle {
+    display: flex;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    background: var(--text-primary);
+    color: #ffffff;
+    border-radius: var(--radius-pill);
+    padding: 0.35rem;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .mobile-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    border-radius: var(--radius-pill);
+    min-height: 44px; /* Accessible touch target */
+  }
+
+  .mobile-toggle-btn.active {
+    background: var(--primary);
+    color: #ffffff;
+  }
+
+  /* Hostel Detail Page */
+  .hostel-detail-page {
+    padding: 1rem 1rem 5rem;
+  }
+
+  .detail-header-card {
+    padding: 1.25rem;
+  }
+
+  .detail-price-box {
+    text-align: left;
+    width: 100%;
+  }
+
+  .detail-content-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .score-summary-banner {
+    grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+    gap: 1rem;
+  }
+
+  .rating-bar-row {
+    grid-template-columns: 100px 1fr 35px;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+  }
+
+  .mobile-sticky-action-bar {
+    display: flex;
+  }
+
+  /* Active Selection Mobile Adjustments */
+  .active-selection-overlay {
+    bottom: 5rem;
+    left: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .active-selection-card {
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .active-selection-layout {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .active-selection-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .active-selection-actions {
+    width: 100%;
+    flex-direction: row;
+  }
+
+  .active-selection-actions .btn {
+    flex: 1;
+  }
+
+  /* Touch Target Safeguard */
+  .btn, .filter-chip, .map-control-btn {
+    min-height: 44px;
+  }
+}

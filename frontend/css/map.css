@@ -1,0 +1,592 @@
+/* ==========================================================
+   HOSTEL MAP — Map & Discovery Layout Styles
+   Theme: Sleek Interface (Modern Indigo & Refined Neutrals)
+   ========================================================== */
+
+/* Main Split Layout */
+.discovery-layout {
+  display: flex;
+  height: calc(100vh - var(--header-height));
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-app);
+}
+
+/* Left Panel: Hostel Explorer */
+.hostel-explorer-pane {
+  width: var(--list-width-desktop);
+  min-width: 380px;
+  max-width: 440px;
+  height: 100%;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 10;
+  box-shadow: 1px 0 3px rgba(0, 0, 0, 0.02);
+}
+
+.explorer-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+  z-index: 15;
+}
+
+.explorer-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+.explorer-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.results-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+
+.hostel-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 3rem;
+}
+
+/* Right Panel: Map */
+.map-pane {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+/* Sleek subtle dot grid background on map canvas */
+.map-pane::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.25;
+  background-image: radial-gradient(var(--primary) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  min-height: 250px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Leaflet integration styles */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  font-family: inherit;
+  background: #f8fafc;
+}
+
+.leaflet-div-icon.leaflet-custom-marker-wrapper {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Floating Map Controls */
+.map-controls-group {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* Map Provider Status Indicator */
+.map-provider-badge {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.map-provider-badge .badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  display: inline-block;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+}
+
+.map-control-btn {
+  width: 38px;
+  height: 38px;
+  background: #ffffff;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.map-control-btn:hover {
+  background: var(--primary-subtle);
+  border-color: var(--primary-border);
+  color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.map-control-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+}
+
+/* Sleek Interface Price Pill Markers */
+.custom-map-marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.custom-map-marker:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  transform: translateY(-2px) scale(1.1);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.25), var(--shadow-xl);
+  z-index: 1001;
+}
+
+.custom-map-marker .marker-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--border-strong);
+  transition: background-color 180ms ease, transform 180ms ease;
+  flex-shrink: 0;
+}
+
+.custom-map-marker:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--primary);
+  z-index: 999;
+}
+
+.custom-map-marker:hover .marker-dot {
+  background-color: var(--primary);
+  transform: scale(1.2);
+}
+
+.custom-map-marker.active {
+  background: #ffffff;
+  color: var(--primary-text);
+  border-color: var(--primary);
+  transform: translateY(-2px) scale(1.12);
+  box-shadow: 0 0 0 2px var(--primary-border), var(--shadow-xl);
+  z-index: 1000;
+}
+
+.custom-map-marker.active .marker-dot {
+  background-color: var(--primary);
+  transform: scale(1.4);
+  box-shadow: 0 0 6px rgba(79, 70, 229, 0.6);
+}
+
+/* GPS Pulse User Location Marker */
+.user-gps-pulse {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(79, 70, 229, 0.18);
+  border: 2px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulseLoc 2s infinite ease-in-out;
+}
+
+.user-gps-pulse-inner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.6);
+}
+
+@keyframes pulseLoc {
+  0% { transform: scale(0.9); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 0.6; }
+  100% { transform: scale(0.9); opacity: 0.9; }
+}
+
+/* Map Info Window Styling */
+.map-infowindow {
+  max-width: 260px;
+  padding: 0.25rem;
+  font-family: var(--font-sans);
+}
+
+.infowindow-type {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--primary);
+  letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
+}
+
+.infowindow-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+  margin-bottom: 0.35rem;
+}
+
+.infowindow-price {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--primary-text);
+  margin-bottom: 0.35rem;
+}
+
+.infowindow-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #b45309;
+  margin-bottom: 0.5rem;
+}
+
+.infowindow-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+/* Fallback Map Notice */
+.map-fallback-banner {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.825rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Accessible Map Pane Focus */
+.map-pane:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Keyboard Navigation Instructions Badge / Bar */
+.map-keyboard-hint {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+  transition: opacity 200ms ease;
+}
+
+.map-keyboard-hint kbd {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.7rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Keyboard Help Modal */
+.keyboard-help-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.keyboard-help-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-2xl);
+  max-width: 480px;
+  width: 100%;
+  padding: 1.5rem;
+  position: relative;
+  animation: slideUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.keyboard-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.keyboard-help-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.keyboard-help-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.keyboard-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.keyboard-help-keys {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.kbd-badge {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-primary);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ==========================================================
+   Marker Clustering Styles (Sleek High-Density Interface)
+   ========================================================== */
+.custom-cluster-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  outline: none;
+}
+
+.custom-cluster-marker:hover,
+.custom-cluster-marker:focus-visible {
+  transform: translate(-50%, -50%) scale(1.12);
+  z-index: 1000 !important;
+}
+
+.custom-cluster-marker:focus-visible .cluster-badge {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+
+.cluster-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #ffffff;
+  border: 3px solid #ffffff;
+  font-family: inherit;
+  line-height: 1;
+  text-align: center;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Cluster sizes & theme colors */
+.custom-cluster-marker.cluster-sm .cluster-badge {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.custom-cluster-marker.cluster-md .cluster-badge {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+  box-shadow: 0 6px 16px rgba(67, 56, 202, 0.45), 0 2px 4px rgba(0, 0, 0, 0.12);
+}
+
+.custom-cluster-marker.cluster-lg .cluster-badge {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%);
+  box-shadow: 0 8px 20px rgba(30, 27, 75, 0.5), 0 2px 5px rgba(0, 0, 0, 0.15);
+}
+
+/* Subtle breathing outer glow ring */
+.cluster-badge::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.22;
+  animation: cluster-pulse 3s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes cluster-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0.08;
+  }
+}
+
+.cluster-count {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.custom-cluster-marker.cluster-lg .cluster-count {
+  font-size: 1.1rem;
+}
+
+.cluster-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+  margin-top: 1px;
+}
+
+/* Cluster controls & indicator badge in header/toolbar */
+.clustering-active-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  background: var(--bg-subtle);
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+}
+
+.map-control-btn.active-clustering {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.25);
+}
+
+.custom-cluster-marker.hover-highlight {
+  transform: translate(-50%, -50%) scale(1.18);
+  z-index: 1000 !important;
+}
+
+.custom-cluster-marker.hover-highlight .cluster-badge {
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.4), 0 8px 24px rgba(79, 70, 229, 0.5);
+  border-color: #f8fafc;
+}
+

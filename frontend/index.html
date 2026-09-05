@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hostel Map — Find the Right Hostel Based on Real Student Experiences</title>
+  <meta name="description" content="Discover student hostels, compare verified rent and food menus, and read anonymous student reviews." />
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/leaflet.css" />
+  <link rel="stylesheet" href="/css/map.css" />
+  <link rel="stylesheet" href="/css/responsive.css" />
+</head>
+<body>
+
+  <!-- Top Header (Sleek Interface) -->
+  <header class="site-header" id="site-header">
+    <div style="display:flex; align-items:center; gap:2rem;">
+      <a href="/index.html" class="header-brand" id="brand-link">
+        <div class="brand-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        </div>
+        <span class="brand-title">HOSTEL<span class="brand-title-accent">MAP</span></span>
+      </a>
+
+      <nav class="header-nav">
+        <a href="/index.html" class="nav-link active">Explore</a>
+        <a href="#how-it-works" class="nav-link" onclick="window.openHowItWorks(event)">Rating Method</a>
+        <a href="/admin.html" class="nav-link">Warden Portal</a>
+      </nav>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" id="btn-locate-header" onclick="window.mapController.handleLocateUser()">
+        📍 Near Me
+      </button>
+      <a href="/admin.html" class="btn btn-primary btn-sm">
+        Admin Access
+      </a>
+      <div class="header-user-avatar" title="Student Session">ST</div>
+    </div>
+  </header>
+
+  <!-- Main Discovery Split Screen -->
+  <main class="discovery-layout" id="discovery-layout">
+    
+    <!-- Left Explorer Column (42% desktop width) -->
+    <aside class="hostel-explorer-pane" id="hostel-explorer">
+      
+      <!-- Search & Filters Header -->
+      <div class="explorer-header">
+        <div class="search-container">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" 
+                   id="search-input" 
+                   class="search-input" 
+                   placeholder="Search college, area, or hostel (e.g. Gachibowli, JNTU)..." 
+                   autocomplete="off" />
+            <button id="search-clear" class="search-clear-btn" title="Clear search">✕</button>
+          </div>
+        </div>
+
+        <!-- Mobile Quick Map Action -->
+        <button class="btn btn-secondary btn-sm mobile-quick-map-btn" id="mobile-quick-map-btn" onclick="window.mapController.switchToMapView()" type="button">
+          🗺️ Open Map View
+        </button>
+
+        <!-- Primary Type Filter Chips -->
+        <div class="filters-row">
+          <button class="filter-chip active" data-filter-type="ALL">All Hostels</button>
+          <button class="filter-chip" data-filter-type="BOYS">👦 Boys</button>
+          <button class="filter-chip" data-filter-type="GIRLS">👧 Girls</button>
+          <button class="filter-chip" data-filter-type="CO_LIVING">🏠 Co-Living</button>
+        </div>
+
+        <!-- Secondary Attribute Filters -->
+        <div class="filters-row" style="padding-top:0;">
+          <button class="filter-chip" id="filter-food">🍲 Food Included</button>
+          <button class="filter-chip" id="filter-rating">★ 4.0+ Experience</button>
+          
+          <select id="price-filter-select" class="filter-chip" style="outline:none; appearance:auto; background:var(--bg-surface); padding-right:0.5rem;">
+            <option value="">Any Budget</option>
+            <option value="BELOW_5000">Under ₹5,000</option>
+            <option value="5000_8000">₹5,000 - ₹8,000</option>
+            <option value="8000_12000">₹8,000 - ₹12,000</option>
+            <option value="12000_PLUS">₹12,000+</option>
+          </select>
+        </div>
+
+        <!-- Facility Chips -->
+        <div class="filters-row" id="facility-filter-chips" style="padding-top:0;">
+          <!-- Dynamically populated from API -->
+        </div>
+
+        <!-- Title & Counter -->
+        <div class="explorer-title-row">
+          <h2 class="explorer-title">Hostels in Hyderabad</h2>
+          <span class="results-count" id="results-count">Loading hostels...</span>
+        </div>
+      </div>
+
+      <!-- Hostel Cards List -->
+      <div class="hostel-list-container" id="hostel-list">
+        <!-- Rendered via map.js -->
+      </div>
+    </aside>
+
+    <!-- Right Map Column (58% desktop width) -->
+    <section class="map-pane" id="map-pane" role="region" aria-label="Interactive Map of Student Hostels" tabindex="0">
+      <!-- Google Maps Canvas -->
+      <div id="map" role="application" aria-label="Interactive Map canvas. Use arrow keys to pan, plus and minus keys to zoom, bracket keys to cycle markers." tabindex="-1"></div>
+
+      <!-- Screen Reader Live Announcer for Map Events -->
+      <div id="map-live-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+      <!-- Visual Keyboard Navigation Hint Bar -->
+      <div class="map-keyboard-hint" id="map-keyboard-hint" aria-hidden="true">
+        <span>Map:</span>
+        <kbd>↑↓←→</kbd> Pan
+        <kbd>+</kbd><kbd>-</kbd> Zoom
+        <kbd>[</kbd><kbd>]</kbd> Pins
+        <kbd>C</kbd> Cluster
+        <kbd>?</kbd> Help
+      </div>
+
+      <!-- Floating Map Action Buttons with Accessible ARIA Labels -->
+      <div class="map-controls-group" role="toolbar" aria-label="Map Navigation and View Controls">
+        <button class="map-control-btn" id="map-zoomin-btn" aria-label="Zoom in on map (+)" title="Zoom in (+)" type="button">
+          ➕
+        </button>
+        <button class="map-control-btn" id="map-zoomout-btn" aria-label="Zoom out on map (-)" title="Zoom out (-)" type="button">
+          ➖
+        </button>
+        <button class="map-control-btn active-clustering" id="map-cluster-toggle-btn" aria-label="Toggle marker clustering (C)" title="Toggle clustering (C)" type="button">
+          👥
+        </button>
+        <button class="map-control-btn" id="map-locate-btn" aria-label="Find hostels near my location (L)" title="Find hostels near me (L)" type="button">
+          🎯
+        </button>
+        <button class="map-control-btn" id="map-recenter-btn" aria-label="Recenter map to Hyderabad default view (R)" title="Recenter map (R)" type="button">
+          🔄
+        </button>
+        <button class="map-control-btn" id="map-keyboard-help-btn" aria-label="Open keyboard shortcuts guide (?)" title="Keyboard shortcuts (?)" aria-haspopup="dialog" type="button">
+          ⌨️
+        </button>
+      </div>
+
+      <!-- Map Provider Status Indicator -->
+      <div class="map-provider-badge" id="map-provider-badge" aria-live="polite">
+        <span class="badge-dot"></span> Interactive Map
+      </div>
+
+      <!-- Sleek Interface Active Selection Floating Drawer -->
+      <div class="active-selection-overlay" id="active-selection-overlay" role="region" aria-label="Selected hostel quick preview" aria-live="polite" style="display:none;">
+        <div class="active-selection-card">
+          <button class="active-selection-close" id="active-selection-close" aria-label="Close hostel preview (Escape)" title="Close preview (Esc)" onclick="window.mapController.closeActiveSelection()">✕</button>
+          <div id="active-selection-body"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Mobile Floating View Switcher ("List" / "Map") -->
+  <div class="mobile-view-toggle" role="tablist" aria-label="View switchers">
+    <button class="mobile-toggle-btn active" id="mobile-toggle-list" role="tab" aria-selected="true" aria-label="Switch to list view">
+      📋 List
+    </button>
+    <button class="mobile-toggle-btn" id="mobile-toggle-map" role="tab" aria-selected="false" aria-label="Switch to map view">
+      🗺️ Map
+    </button>
+  </div>
+
+  <!-- Accessible Keyboard Navigation Help Modal -->
+  <div class="keyboard-help-overlay" id="keyboard-help-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="kbd-help-title">
+    <div class="keyboard-help-card">
+      <div class="keyboard-help-header">
+        <h3 class="keyboard-help-title" id="kbd-help-title">
+          <span>⌨️</span> Map Keyboard Navigation
+        </h3>
+        <button class="btn btn-ghost btn-sm" id="kbd-help-close" aria-label="Close keyboard shortcuts modal" onclick="window.mapController.toggleKeyboardHelp(false)">✕</button>
+      </div>
+
+      <div class="keyboard-help-grid">
+        <div class="keyboard-help-row">
+          <span>Pan Map (North, South, East, West)</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">↑</kbd>
+            <kbd class="kbd-badge">↓</kbd>
+            <kbd class="kbd-badge">←</kbd>
+            <kbd class="kbd-badge">→</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Zoom In / Zoom Out</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">+</kbd>
+            <kbd class="kbd-badge">-</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Cycle through hostel markers</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">[</kbd>
+            <kbd class="kbd-badge">]</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Select focused marker / open details</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">Enter</kbd>
+            <span style="font-size:0.75rem; color:var(--text-muted);">or</span>
+            <kbd class="kbd-badge">Space</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Close preview drawer / modal</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">Esc</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Recenter map to Hyderabad</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">R</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Find hostels near my location</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">L</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Toggle marker clustering</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">C</kbd>
+          </div>
+        </div>
+        <div class="keyboard-help-row">
+          <span>Toggle this shortcuts guide</span>
+          <div class="keyboard-help-keys">
+            <kbd class="kbd-badge">?</kbd>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:1.25rem; display:flex; justify-content:flex-end;">
+        <button class="btn btn-primary btn-sm" onclick="window.mapController.toggleKeyboardHelp(false)">
+          Got it
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Floating Bottom Drawer -->
+  <div class="compare-drawer" id="compare-drawer">
+    <div style="display:flex; align-items:center; gap:0.75rem;">
+      <span style="font-weight:700; font-size:1.1rem; color:var(--text-primary);">
+        ⇄ Comparing <span id="compare-count">0</span> Hostels
+      </span>
+      <span style="font-size:0.85rem; color:var(--text-muted);">(Max 3)</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:0.5rem;">
+      <button class="btn btn-ghost btn-sm" onclick="window.clearComparison()">Clear</button>
+      <button class="btn btn-primary btn-sm" onclick="window.openComparisonModal()">
+        View Side-by-Side Comparison →
+      </button>
+    </div>
+  </div>
+
+  <!-- Comparison Modal -->
+  <div class="modal-overlay" id="compare-modal">
+    <div class="modal-content" style="max-width:850px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Hostel Side-by-Side Comparison</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('compare-modal').classList.remove('active')">✕</button>
+      </div>
+      <div class="comparison-table-wrapper" id="compare-table-content">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Rating Formula Info Modal -->
+  <div class="modal-overlay" id="rating-info-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">How Our Experience Rating Works</h3>
+        <button class="modal-close-btn" onclick="document.getElementById('rating-info-modal').classList.remove('active')">✕</button>
+      </div>
+      <div style="color:var(--text-secondary); line-height:1.6; font-size:0.95rem; display:flex; flex-direction:column; gap:1rem;">
+        <p>Unlike generic review portals, <strong>Hostel Map</strong> calculates a weighted experience score prioritizing what genuinely matters to students living away from home:</p>
+        
+        <div style="background:var(--bg-subtle); padding:1rem; border-radius:10px; border:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:0.5rem; font-size:0.9rem;">
+          <div>🍲 <strong>Food Quality (25%)</strong>: Taste, hygiene, daily variety, and timely meal serving.</div>
+          <div>✨ <strong>Cleanliness (20%)</strong>: Room sweeping, washroom sanitation, and trash disposal.</div>
+          <div>🛡️ <strong>Safety & Security (20%)</strong>: Biometric logs, CCTV, warden support, and campus safety.</div>
+          <div>🤝 <strong>Management (15%)</strong>: Rapid maintenance response, fair deposit refunds.</div>
+          <div>📶 <strong>WiFi & Facilities (10%)</strong>: High speed internet for study/work, laundry, power backup.</div>
+          <div>💰 <strong>Value for Money (10%)</strong>: Transparency of electricity and maintenance charges.</div>
+        </div>
+
+        <p>
+          <strong>Recency Weighting:</strong> Reviews posted in the last 90 days are weighted 1.5× higher to reflect current food chefs and warden management.
+        </p>
+
+        <p>
+          <strong>Anonymous Privacy:</strong> Your identity is strictly anonymous to prevent hostel management harassment.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div class="toast-container"></div>
+
+  <!-- JavaScript Application Bundle -->
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/leaflet.js"></script>
+  <script src="/js/map.js"></script>
+
+  <script>
+    // Global Comparison UI helpers
+    window.openHowItWorks = function(e) {
+      if (e) e.preventDefault();
+      document.getElementById('rating-info-modal').classList.add('active');
+    };
+
+    window.clearComparison = function() {
+      localStorage.removeItem(CONFIG.STORAGE_KEYS.COMPARE_HOSTELS);
+      if (window.mapController) {
+        window.mapController.renderHostelList();
+        window.mapController.updateCompareDrawer();
+      }
+    };
+
+    window.openComparisonModal = async function() {
+      const modal = document.getElementById('compare-modal');
+      const tableDiv = document.getElementById('compare-table-content');
+      const compareIds = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.COMPARE_HOSTELS) || '[]');
+
+      if (compareIds.length === 0) {
+        showToast('No hostels selected for comparison', 'info');
+        return;
+      }
+
+      modal.classList.add('active');
+      tableDiv.innerHTML = `<div class="spinner" style="margin:2rem auto;"></div>`;
+
+      try {
+        const hostels = await Promise.all(compareIds.map(id => API.getHostelById(id).then(r => r.data)));
+
+        tableDiv.innerHTML = `
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                ${hostels.map(h => `<th><strong>${h.name}</strong><br><span style="font-weight:400; font-size:0.75rem;">${h.area}</span></th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Monthly Rent</strong></td>
+                ${hostels.map(h => `<td style="color:var(--primary); font-weight:700;">₹${h.monthlyRent.toLocaleString('en-IN')}</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Security Deposit</strong></td>
+                ${hostels.map(h => `<td>₹${h.deposit.toLocaleString('en-IN')}</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Hostel Type</strong></td>
+                ${hostels.map(h => `<td>${h.hostelType}</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Overall Score (out of 5)</strong></td>
+                ${hostels.map(h => `<td><strong style="color:#047857;">★ ${h.rating.toFixed(1)}</strong> (${h.reviewCount} reviews)</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Food Rating (25%)</strong></td>
+                ${hostels.map(h => `<td>${(h.ratingBreakdown?.food || 0).toFixed(1)} / 5</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Cleanliness (20%)</strong></td>
+                ${hostels.map(h => `<td>${(h.ratingBreakdown?.cleanliness || 0).toFixed(1)} / 5</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Safety (20%)</strong></td>
+                ${hostels.map(h => `<td>${(h.ratingBreakdown?.safety || 0).toFixed(1)} / 5</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Recommendation Rate</strong></td>
+                ${hostels.map(h => `<td><strong>${h.ratingBreakdown?.recommendationRate || 0}%</strong> recommend</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Today's Lunch</strong></td>
+                ${hostels.map(h => `<td style="font-size:0.82rem; color:var(--text-secondary);">${h.todayFood ? h.todayFood.lunch : 'Not published'}</td>`).join('')}
+              </tr>
+              <tr>
+                <td><strong>Action</strong></td>
+                ${hostels.map(h => `<td><a href="/hostel.html?id=${h.id}" class="btn btn-primary btn-sm">Inspect →</a></td>`).join('')}
+              </tr>
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        tableDiv.innerHTML = `<p style="color:red; text-align:center; padding:1rem;">${err.message}</p>`;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
+import { ensureWardenData, registerWardenRoutes } from './warden_service';
 
 const rootDir = process.cwd();
 
@@ -683,22 +684,25 @@ const initialReports: ReviewReport[] = [
 ];
 
 function loadDB(): DB {
+  let db: any;
   if (fs.existsSync(DB_FILE)) {
     try {
-      return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+      db = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
     } catch {
       // Fallback
     }
   }
-  const db: DB = {
-    facilities: initialFacilities,
-    hostels: initialHostels,
-    foodUpdates: initialFoodUpdates,
-    reviews: initialReviews,
-    reports: initialReports,
-  };
-  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), 'utf-8');
-  return db;
+  if (!db) {
+    db = {
+      facilities: initialFacilities,
+      hostels: initialHostels,
+      foodUpdates: initialFoodUpdates,
+      reviews: initialReviews,
+      reports: initialReports,
+    };
+  }
+  ensureWardenData(db);
+  return db as DB;
 }
 
 function saveDB(db: DB) {
@@ -1374,6 +1378,9 @@ app.patch('/api/admin/reports/:id/status', (req: Request, res: Response) => {
   res.json({ success: true, message: `Report status updated to ${status}` });
 });
 
+// Register Warden Portal & Feedback APIs
+registerWardenRoutes(app, loadDB, saveDB);
+
 // -------------------------------------------------------------
 // FRONTEND STATIC FILE SERVING
 // -------------------------------------------------------------
@@ -1411,6 +1418,14 @@ app.get('/review.html', (req: Request, res: Response) => {
 
 app.get('/admin.html', (req: Request, res: Response) => {
   res.sendFile(path.join(frontendDir, 'admin.html'));
+});
+
+app.get('/warden.html', (req: Request, res: Response) => {
+  res.sendFile(path.join(frontendDir, 'warden.html'));
+});
+
+app.get('/feedback.html', (req: Request, res: Response) => {
+  res.sendFile(path.join(frontendDir, 'feedback.html'));
 });
 
 // Start Server

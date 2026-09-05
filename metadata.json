@@ -1,6 +1,6 @@
 {
   "name": "Hostel Map",
-  "description": "Student hostel discovery platform with interactive map, real student reviews, daily food updates, and experience ratings.",
+  "description": "Student hostel discovery platform with interactive map, warden management portal, daily food announcements, student admissions, logins, QR feedback, available rooms, and fee payment reminders.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

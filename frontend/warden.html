@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Warden Portal | Student Living & Hostel Management</title>
+  <meta name="description" content="Manage your hostel profile, daily food announcements, student admissions, logins, QR feedback, available rooms, and fee payment reminders." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="/css/variables.css" />
+  <link rel="stylesheet" href="/css/base.css" />
+  <link rel="stylesheet" href="/css/components.css" />
+  <link rel="stylesheet" href="/css/responsive.css" />
+  <link rel="stylesheet" href="/css/warden.css" />
+</head>
+<body>
+
+  <!-- Site Navigation Header -->
+  <header class="site-header" id="warden-header">
+    <a href="/index.html" class="header-brand" id="brand-link">
+      <div class="brand-icon">W</div>
+      <div>
+        <div style="font-weight:800; font-size:1.05rem; letter-spacing:-0.01em;">Warden Portal</div>
+        <div style="font-size:0.7rem; font-weight:600; color:var(--text-muted); line-height:1;">Hostel Operations & Management</div>
+      </div>
+    </a>
+
+    <nav class="header-nav">
+      <a href="/index.html" class="nav-link" id="nav-discover">Discover Map</a>
+      <a href="/hostel.html?id=1" class="nav-link" id="nav-public-page" target="_blank">View Public Profile ↗</a>
+      <a href="/admin.html" class="nav-link" id="nav-admin">Platform Admin</a>
+    </nav>
+
+    <div class="header-actions">
+      <div id="warden-auth-status" style="display:flex; align-items:center; gap:0.75rem;">
+        <span id="warden-user-badge" style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">
+          Warden Desk
+        </span>
+        <button id="btn-warden-logout" class="btn btn-secondary btn-sm" onclick="window.wardenController.logout()">
+          Sign Out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Warden Container -->
+  <main class="warden-container" id="warden-main-app">
+
+    <!-- Topbar with Hostel Selector & Quick Action Bar -->
+    <div class="warden-topbar" id="warden-topbar">
+      <div class="warden-hostel-selector">
+        <label for="warden-hostel-select" style="font-size:0.85rem; font-weight:700; color:var(--text-muted);">
+          MANAGING HOSTEL:
+        </label>
+        <select id="warden-hostel-select" class="warden-select-input" onchange="window.wardenController.onHostelChange(this.value)">
+          <option value="1">Sri Venkateshwara Executive Boys Hostel</option>
+          <option value="2">Ananya Elite Luxury Girls PG</option>
+          <option value="3">Tribe Co-Living Student Hub</option>
+        </select>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+        <button class="btn btn-sm btn-secondary" onclick="window.wardenController.switchTab('food')">
+          🍲 Post Food Announcement
+        </button>
+        <button class="btn btn-sm btn-secondary" onclick="window.wardenController.openAddStudentModal()">
+          👤 + Add Student
+        </button>
+        <button class="btn btn-sm btn-secondary" onclick="window.wardenController.openAddRoomModal()">
+          🛏️ + Add Room
+        </button>
+        <button class="btn btn-sm btn-primary" onclick="window.wardenController.switchTab('feedback')">
+          📱 QR Feedback Poster
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="warden-nav-tabs" id="warden-nav-tabs">
+      <button class="warden-tab-btn active" data-tab="overview" onclick="window.wardenController.switchTab('overview')">
+        📊 Overview
+      </button>
+      <button class="warden-tab-btn" data-tab="profile" onclick="window.wardenController.switchTab('profile')">
+        🏠 Hostel Profile
+      </button>
+      <button class="warden-tab-btn" data-tab="food" onclick="window.wardenController.switchTab('food')">
+        🍲 Food Announcements & Mess Menu
+      </button>
+      <button class="warden-tab-btn" data-tab="rooms" onclick="window.wardenController.switchTab('rooms')">
+        🛏️ Available Rooms & Beds
+        <span class="warden-tab-badge" id="badge-vacant-beds">0 vacant</span>
+      </button>
+      <button class="warden-tab-btn" data-tab="students" onclick="window.wardenController.switchTab('students')">
+        👥 Students & Logins
+        <span class="warden-tab-badge" id="badge-total-students">0</span>
+      </button>
+      <button class="warden-tab-btn" data-tab="feedback" onclick="window.wardenController.switchTab('feedback')">
+        📱 QR Feedback System
+        <span class="warden-tab-badge badge-alert" id="badge-open-feedback">0 open</span>
+      </button>
+      <button class="warden-tab-btn" data-tab="fees" onclick="window.wardenController.switchTab('fees')">
+        💳 Fee Reminders & Ledger
+        <span class="warden-tab-badge badge-alert" id="badge-pending-fees">₹0</span>
+      </button>
+      <button class="warden-tab-btn" data-tab="notices" onclick="window.wardenController.switchTab('notices')">
+        📢 Notice Board
+      </button>
+    </nav>
+
+    <!-- =========================================================
+         TAB 1: OVERVIEW DASHBOARD
+         ========================================================= -->
+    <section class="warden-panel active" id="panel-overview">
+      <!-- KPI Stats Grid -->
+      <div class="warden-stats-grid">
+        <div class="warden-stat-card" id="card-occupancy">
+          <div class="warden-stat-header">
+            <span class="warden-stat-title">Bed Occupancy</span>
+            <span class="warden-stat-icon">🛏️</span>
+          </div>
+          <div class="warden-stat-value" id="stat-occupancy-rate">0%</div>
+          <div class="warden-stat-desc" id="stat-occupancy-desc">0 of 0 beds occupied</div>
+          <div class="occupancy-bar-container">
+            <div class="occupancy-bar-fill" id="stat-occupancy-bar" style="width:0%;"></div>
+          </div>
+        </div>
+
+        <div class="warden-stat-card" id="card-available-rooms">
+          <div class="warden-stat-header">
+            <span class="warden-stat-title">Available Vacant Beds</span>
+            <span class="warden-stat-icon">🚪</span>
+          </div>
+          <div class="warden-stat-value" style="color:var(--color-primary);" id="stat-vacant-beds">0</div>
+          <div class="warden-stat-desc" id="stat-rooms-count">Across 0 total rooms</div>
+        </div>
+
+        <div class="warden-stat-card" id="card-enrolled-students">
+          <div class="warden-stat-header">
+            <span class="warden-stat-title">Active Students</span>
+            <span class="warden-stat-icon">👥</span>
+          </div>
+          <div class="warden-stat-value" id="stat-active-students">0</div>
+          <div class="warden-stat-desc">With verified logins & room slots</div>
+        </div>
+
+        <div class="warden-stat-card" id="card-pending-fees">
+          <div class="warden-stat-header">
+            <span class="warden-stat-title">Fee Collection Dues</span>
+            <span class="warden-stat-icon">💳</span>
+          </div>
+          <div class="warden-stat-value" style="color:#b91c1c;" id="stat-pending-fees">₹0</div>
+          <div class="warden-stat-desc" id="stat-pending-count">0 pending/overdue reminders</div>
+        </div>
+      </div>
+
+      <!-- Quick Alert Banners -->
+      <div id="overview-today-food-banner" class="food-banner-card" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <div style="font-size:0.75rem; font-weight:800; text-transform:uppercase; color:#ea580c; letter-spacing:0.05em; margin-bottom:0.25rem;">
+              🍲 ACTIVE FOOD ANNOUNCEMENT FOR STUDENTS TODAY
+            </div>
+            <h3 style="font-size:1.15rem; font-weight:800; color:#7c2d12; margin-bottom:0.35rem;" id="banner-food-title">
+              Special Menu
+            </h3>
+            <p style="font-size:0.88rem; color:#9a3412; margin:0; line-height:1.4;" id="banner-food-announcement">
+              Details...
+            </p>
+          </div>
+          <button class="btn btn-sm btn-secondary" onclick="window.wardenController.switchTab('food')">
+            Edit Menu & Timings
+          </button>
+        </div>
+      </div>
+
+      <!-- Two column breakdown: Available Rooms Preview + Recent Grievance Feed -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(420px, 1fr)); gap:1.5rem; margin-top:1.5rem;">
+        <!-- Left: Quick Available Rooms Preview -->
+        <div class="warden-table-card">
+          <div class="warden-table-toolbar">
+            <div>
+              <h3 style="font-size:1rem; font-weight:800; margin:0; color:var(--text-primary);">
+                Available Rooms Summary
+              </h3>
+              <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Rooms ready for new student admission</p>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="window.wardenController.switchTab('rooms')">
+              View All Rooms →
+            </button>
+          </div>
+          <div style="padding:1rem;">
+            <div id="overview-available-rooms-list" style="display:flex; flex-direction:column; gap:0.75rem;">
+              <p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Loading available rooms...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Recent QR Student Feedback Feed -->
+        <div class="warden-table-card">
+          <div class="warden-table-toolbar">
+            <div>
+              <h3 style="font-size:1rem; font-weight:800; margin:0; color:var(--text-primary);">
+                Live QR Feedback & Grievances
+              </h3>
+              <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Scanned directly by students in mess/hostel</p>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="window.wardenController.switchTab('feedback')">
+              QR System & Poster →
+            </button>
+          </div>
+          <div style="padding:1rem;">
+            <div id="overview-recent-feedbacks-list" style="display:flex; flex-direction:column; gap:0.75rem;">
+              <p style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:1rem;">Loading feedbacks...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 2: HOSTEL PROFILE MANAGEMENT
+         ========================================================= -->
+    <section class="warden-panel" id="panel-profile">
+      <div class="warden-table-card" style="padding:2rem;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <h2 style="font-size:1.35rem; font-weight:800; color:var(--text-primary); margin-bottom:0.25rem;">
+              Hostel Profile & Warden Information
+            </h2>
+            <p style="font-size:0.85rem; color:var(--text-muted);">
+              Manage official hostel public details, warden contact numbers, gate closing curfew, UPI payment ID, and hostel rules.
+            </p>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="document.getElementById('form-hostel-profile').requestSubmit()">
+            Save Profile Changes
+          </button>
+        </div>
+
+        <form id="form-hostel-profile" onsubmit="window.wardenController.handleSaveProfile(event)">
+          <div class="warden-form-grid">
+            <div class="warden-form-group">
+              <label for="prof-name">Hostel Legal / Public Name</label>
+              <input type="text" id="prof-name" name="name" class="warden-form-input" required />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-type">Hostel Accommodation Type</label>
+              <select id="prof-type" name="hostelType" class="warden-form-select">
+                <option value="BOYS">Boys Hostel</option>
+                <option value="GIRLS">Girls PG</option>
+                <option value="CO_LIVING">Co-Living Space</option>
+              </select>
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-warden-name">Chief Warden Name</label>
+              <input type="text" id="prof-warden-name" name="wardenName" class="warden-form-input" required />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-warden-phone">Warden Official Mobile Phone</label>
+              <input type="text" id="prof-warden-phone" name="wardenPhone" class="warden-form-input" placeholder="+91 98480 XXXXX" required />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-warden-email">Warden Official Email</label>
+              <input type="email" id="prof-warden-email" name="wardenEmail" class="warden-form-input" />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-gate-closing">Night Gate Closing Curfew Time</label>
+              <input type="text" id="prof-gate-closing" name="gateClosingTime" class="warden-form-input" placeholder="e.g. 10:30 PM" />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-monthly-rent">Starting Monthly Rent (₹)</label>
+              <input type="number" id="prof-monthly-rent" name="monthlyRent" class="warden-form-input" min="1000" step="100" required />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-deposit">Security Deposit (₹)</label>
+              <input type="number" id="prof-deposit" name="deposit" class="warden-form-input" min="0" step="100" />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-upi-id">UPI ID for Student Fee Collection</label>
+              <input type="text" id="prof-upi-id" name="upiId" class="warden-form-input" placeholder="hostelwarden@upi" />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-area">Area / Locality</label>
+              <input type="text" id="prof-area" name="area" class="warden-form-input" required />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-city">City</label>
+              <input type="text" id="prof-city" name="city" class="warden-form-input" required />
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-pincode">Pincode</label>
+              <input type="text" id="prof-pincode" name="pincode" class="warden-form-input" />
+            </div>
+          </div>
+
+          <div class="warden-form-group" style="margin-top:0.5rem;">
+            <label for="prof-address">Complete Street Address</label>
+            <input type="text" id="prof-address" name="address" class="warden-form-input" required />
+          </div>
+
+          <div class="warden-form-group">
+            <label for="prof-description">Hostel Description & Highlights</label>
+            <textarea id="prof-description" name="description" rows="3" class="warden-form-textarea"></textarea>
+          </div>
+
+          <div class="warden-form-group">
+            <label for="prof-rules">Hostel Rules & Policies (One rule per line)</label>
+            <textarea id="prof-rules" name="rules" rows="4" class="warden-form-textarea" placeholder="Gate closes at 10:30 PM&#10;No smoking or alcohol&#10;Visitors allowed in lounge only"></textarea>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+            <button type="submit" class="btn btn-primary" id="btn-save-profile">
+              💾 Save Profile Updates
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 3: FOOD ANNOUNCEMENTS & MESS MENU
+         ========================================================= -->
+    <section class="warden-panel" id="panel-food">
+      <div style="display:grid; grid-template-columns:1fr 340px; gap:1.5rem; align-items:start;">
+        <!-- Left: Food Announcement & Menu Form -->
+        <div class="warden-table-card" style="padding:2rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <h2 style="font-size:1.3rem; font-weight:800; color:var(--text-primary); margin:0;">
+                Food Announcements & Daily Mess Menu
+              </h2>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin:0.25rem 0 0;">
+                Publish today's meals and special announcements directly to all students and public discovery.
+              </p>
+            </div>
+            <div>
+              <label for="food-date-picker" style="font-size:0.75rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:0.2rem;">
+                MENU DATE:
+              </label>
+              <input type="date" id="food-date-picker" class="warden-form-input" style="padding:0.4rem 0.6rem; font-weight:600;" onchange="window.wardenController.loadFoodForDate(this.value)" />
+            </div>
+          </div>
+
+          <form id="form-food-menu" onsubmit="window.wardenController.handleSaveFood(event)">
+            <!-- Highlight Announcement Banner -->
+            <div style="background:#fff7ed; border:1px solid #fed7aa; border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1.5rem;">
+              <label for="food-announcement" style="font-size:0.85rem; font-weight:800; color:#c2410c; display:block; margin-bottom:0.4rem;">
+                📢 SPECIAL FOOD ANNOUNCEMENT / FESTIVAL FEAST (BROADCAST TO STUDENTS)
+              </label>
+              <input type="text" id="food-announcement" name="announcement" class="warden-form-input" placeholder="e.g. Sunday Dum Biryani Feast tonight! Extra ice cream dessert for everyone." style="background:#ffffff; font-weight:600; color:#7c2d12;" />
+              
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-top:0.75rem;">
+                <div>
+                  <label for="food-special-dish" style="font-size:0.8rem; font-weight:700; color:#9a3412;">Special Chef Highlight Dish</label>
+                  <input type="text" id="food-special-dish" name="specialDish" class="warden-form-input" placeholder="e.g. Hyderabadi Dum Biryani & Gulab Jamun" style="background:#ffffff;" />
+                </div>
+                <div>
+                  <label for="food-image-url" style="font-size:0.8rem; font-weight:700; color:#9a3412;">Food Dish Photo URL (Optional)</label>
+                  <input type="url" id="food-image-url" name="imageUrl" class="warden-form-input" placeholder="https://images.unsplash.com/..." style="background:#ffffff;" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Meal Items Grid -->
+            <div class="warden-form-grid">
+              <!-- Breakfast -->
+              <div class="warden-form-group" style="background:#f8fafc; padding:1.2rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                  <label for="food-breakfast" style="font-size:0.9rem; font-weight:800; color:var(--text-primary); margin:0;">
+                    🍳 Breakfast
+                  </label>
+                  <input type="text" id="food-breakfast-timing" name="breakfastTiming" placeholder="7:30 AM – 9:30 AM" style="font-size:0.75rem; padding:0.25rem 0.5rem; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); width:135px;" />
+                </div>
+                <textarea id="food-breakfast" name="breakfast" rows="3" class="warden-form-textarea" placeholder="e.g. Idli Sambar, Medu Vada, Coconut Chutney, Tea / Filter Coffee" required></textarea>
+              </div>
+
+              <!-- Lunch -->
+              <div class="warden-form-group" style="background:#f8fafc; padding:1.2rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                  <label for="food-lunch" style="font-size:0.9rem; font-weight:800; color:var(--text-primary); margin:0;">
+                    🍛 Lunch
+                  </label>
+                  <input type="text" id="food-lunch-timing" name="lunchTiming" placeholder="12:30 PM – 2:30 PM" style="font-size:0.75rem; padding:0.25rem 0.5rem; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); width:135px;" />
+                </div>
+                <textarea id="food-lunch" name="lunch" rows="3" class="warden-form-textarea" placeholder="e.g. Steamed Rice, Dal Tadka, Paneer Butter Masala, Papad, Fresh Curd" required></textarea>
+              </div>
+
+              <!-- Evening Snacks -->
+              <div class="warden-form-group" style="background:#f8fafc; padding:1.2rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                  <label for="food-snacks" style="font-size:0.9rem; font-weight:800; color:var(--text-primary); margin:0;">
+                    ☕ Evening Snacks
+                  </label>
+                  <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">5:00 PM – 6:30 PM</span>
+                </div>
+                <textarea id="food-snacks" name="snacks" rows="3" class="warden-form-textarea" placeholder="e.g. Hot Samosas / Mirchi Bajji with Ginger Cardamom Tea"></textarea>
+              </div>
+
+              <!-- Dinner -->
+              <div class="warden-form-group" style="background:#f8fafc; padding:1.2rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                  <label for="food-dinner" style="font-size:0.9rem; font-weight:800; color:var(--text-primary); margin:0;">
+                    🍽️ Dinner
+                  </label>
+                  <input type="text" id="food-dinner-timing" name="dinnerTiming" placeholder="7:30 PM – 10:00 PM" style="font-size:0.75rem; padding:0.25rem 0.5rem; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); width:135px;" />
+                </div>
+                <textarea id="food-dinner" name="dinner" rows="3" class="warden-form-textarea" placeholder="e.g. Butter Roti, Veg Dum Biryani / Chicken Curry, Mixed Raita" required></textarea>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; margin-top:1.5rem; gap:1rem;">
+              <button type="submit" class="btn btn-primary" id="btn-save-food">
+                📢 Broadcast Food Announcement
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right: Live Student Preview Card -->
+        <div>
+          <div class="warden-table-card" style="padding:1.5rem;">
+            <h3 style="font-size:0.95rem; font-weight:800; color:var(--text-primary); margin-bottom:0.75rem;">
+              📱 Student Mobile Preview
+            </h3>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:1rem;">
+              How students see today's mess announcement in their mobile app:
+            </p>
+            <div id="food-student-preview-box" style="border:1px solid var(--border-subtle); border-radius:var(--radius-lg); overflow:hidden; background:#ffffff;">
+              <div style="background:var(--color-primary); color:#ffffff; padding:0.85rem 1rem;">
+                <div style="font-size:0.75rem; opacity:0.9;">MESS BROADCAST</div>
+                <div style="font-weight:800; font-size:1rem;" id="prev-food-hostel-name">Hostel Mess</div>
+              </div>
+              <div style="padding:1rem;">
+                <div id="prev-special-tag" style="display:none; background:#ffedd5; color:#c2410c; padding:0.25rem 0.6rem; border-radius:var(--radius-sm); font-size:0.75rem; font-weight:800; margin-bottom:0.75rem;">
+                  SPECIAL TODAY
+                </div>
+                <div id="prev-announcement-text" style="font-weight:700; font-size:0.88rem; color:#1e293b; margin-bottom:0.75rem;">
+                  No announcement set
+                </div>
+                <div style="font-size:0.78rem; line-height:1.5; color:var(--text-secondary);" id="prev-meals-summary">
+                  <div><strong>Breakfast:</strong> <span id="prev-bf">...</span></div>
+                  <div><strong>Lunch:</strong> <span id="prev-lu">...</span></div>
+                  <div><strong>Dinner:</strong> <span id="prev-di">...</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 4: AVAILABLE ROOMS & BED OCCUPANCY
+         ========================================================= -->
+    <section class="warden-panel" id="panel-rooms">
+      <div class="warden-table-toolbar" style="border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <div>
+            <h2 style="font-size:1.15rem; font-weight:800; color:var(--text-primary); margin:0;">
+              Room & Bed Inventory
+            </h2>
+            <p style="font-size:0.78rem; color:var(--text-muted); margin:0;">
+              Real-time room occupancy, vacant bed slots, and student allocation.
+            </p>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="btn btn-sm btn-secondary active" id="btn-filter-room-all" onclick="window.wardenController.filterRooms('ALL')">
+              All Rooms
+            </button>
+            <button class="btn btn-sm btn-secondary" id="btn-filter-room-vacant" onclick="window.wardenController.filterRooms('AVAILABLE')">
+              Vacant Available Only
+            </button>
+            <button class="btn btn-sm btn-secondary" id="btn-filter-room-full" onclick="window.wardenController.filterRooms('FULL')">
+              Full
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-sm btn-primary" onclick="window.wardenController.openAddRoomModal()">
+          + Add New Room
+        </button>
+      </div>
+
+      <!-- Rooms Grid Cards -->
+      <div class="rooms-grid" id="rooms-grid-container" style="margin-top:1.25rem;">
+        <p style="text-align:center; padding:2rem; color:var(--text-muted);">Loading rooms inventory...</p>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 5: STUDENTS DIRECTORY & LOGINS
+         ========================================================= -->
+    <section class="warden-panel" id="panel-students">
+      <div class="warden-table-card">
+        <div class="warden-table-toolbar">
+          <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <h2 style="font-size:1.15rem; font-weight:800; color:var(--text-primary); margin:0;">
+              Enrolled Students & Passcode Logins
+            </h2>
+            <input type="text" id="student-search-input" placeholder="Search by name, roll #, room #..." class="warden-form-input" style="width:260px; padding:0.4rem 0.75rem; font-size:0.85rem;" oninput="window.wardenController.filterStudents()" />
+            <select id="student-fee-filter" class="warden-select-input" style="font-size:0.82rem; padding:0.4rem 0.75rem;" onchange="window.wardenController.filterStudents()">
+              <option value="">All Fee Statuses</option>
+              <option value="PAID">Paid</option>
+              <option value="PENDING">Pending</option>
+              <option value="OVERDUE">Overdue</option>
+            </select>
+          </div>
+
+          <button class="btn btn-sm btn-primary" onclick="window.wardenController.openAddStudentModal()">
+            👤 + Add New Student
+          </button>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="warden-table" id="students-table">
+            <thead>
+              <tr>
+                <th>Student / Roll #</th>
+                <th>Room & Bed</th>
+                <th>Phone / Contact</th>
+                <th>Guardian Info</th>
+                <th>Monthly Fee</th>
+                <th>Fee Status</th>
+                <th>Login Username & Passcode</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="students-table-body">
+              <tr>
+                <td colspan="8" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                  Loading students roster...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 6: QR FEEDBACK SYSTEM
+         ========================================================= -->
+    <section class="warden-panel" id="panel-feedback">
+      <!-- QR Poster Section -->
+      <div class="qr-poster-card" style="margin-bottom:2rem;">
+        <div>
+          <div style="display:inline-block; font-size:0.75rem; font-weight:800; color:var(--color-primary); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.35rem;">
+            INSTANT MESS & HOSTEL GRIEVANCE SYSTEM
+          </div>
+          <h2 style="font-size:1.45rem; font-weight:800; color:var(--text-primary); margin-bottom:0.5rem;">
+            Printable QR Feedback Poster
+          </h2>
+          <p style="font-size:0.9rem; color:var(--text-secondary); line-height:1.5; margin-bottom:1.25rem;">
+            Print and place this QR poster on mess dining tables, elevator entries, and notice boards. When students scan with any smartphone camera, they can immediately rate today's meal, submit food feedback, or report WiFi/water issues.
+          </p>
+
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="window.print()">
+              🖨️ Print A4 Poster for Notice Board
+            </button>
+            <button class="btn btn-secondary" onclick="window.wardenController.openTestFeedbackLink()">
+              🔗 Open Mobile Feedback Form ↗
+            </button>
+            <button class="btn btn-secondary" onclick="window.wardenController.copyFeedbackLink()">
+              📋 Copy QR URL
+            </button>
+          </div>
+        </div>
+
+        <!-- The Printable Poster Card -->
+        <div class="printable-poster" id="printable-qr-poster">
+          <div style="font-size:0.72rem; font-weight:800; color:#0284c7; letter-spacing:0.08em; text-transform:uppercase;">
+            STUDENT LIVING EXPERIENCE
+          </div>
+          <h2 id="poster-hostel-name">Hostel Name</h2>
+          <div class="poster-tagline">Scan to Rate Today's Mess & Submit Instant Feedback</div>
+
+          <div class="qr-code-box" id="poster-qr-container">
+            <!-- QR code rendered here -->
+          </div>
+
+          <div class="scan-instructions">
+            <div>📷 Open Phone Camera & Point at QR</div>
+            <div style="font-size:0.72rem; color:#64748b; margin-top:0.25rem;">Anonymous or with Room # • Directly to Warden Desk</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Grievance Table -->
+      <div class="warden-table-card">
+        <div class="warden-table-toolbar">
+          <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+            <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-primary); margin:0;">
+              Student QR Feedbacks & Complaints
+            </h3>
+            <select id="filter-feedback-category" class="warden-select-input" style="font-size:0.82rem; padding:0.35rem 0.75rem;" onchange="window.wardenController.loadFeedbacks()">
+              <option value="">All Categories</option>
+              <option value="FOOD">Food & Mess</option>
+              <option value="WIFI">WiFi & Internet</option>
+              <option value="CLEANLINESS">Cleanliness</option>
+              <option value="MAINTENANCE">Maintenance</option>
+              <option value="SECURITY">Security</option>
+              <option value="GENERAL">General</option>
+            </select>
+            <select id="filter-feedback-status" class="warden-select-input" style="font-size:0.82rem; padding:0.35rem 0.75rem;" onchange="window.wardenController.loadFeedbacks()">
+              <option value="">All Statuses</option>
+              <option value="NEW">New Alert</option>
+              <option value="ACKNOWLEDGED">Acknowledged</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="RESOLVED">Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="padding:1.5rem;" id="feedbacks-container">
+          <p style="text-align:center; color:var(--text-muted);">Loading student feedbacks...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 7: FEE REMINDERS & PAYMENT LEDGER
+         ========================================================= -->
+    <section class="warden-panel" id="panel-fees">
+      <!-- Fee Stats Row -->
+      <div class="warden-stats-grid">
+        <div class="warden-stat-card">
+          <div class="warden-stat-header">
+            <span class="warden-stat-title">Monthly Expected Fees</span>
+            <span class="warden-stat-icon">💰</span>
+          </div>
+          <div class="warden-stat-value" id="fee-stat-expected">₹0</div>
+          <div class="warden-stat-desc">From active enrolled students</div>
+        </div>
+
+        <div class="warden-stat-card">
+          <div class="warden-stat-header">
+            <span class="warden-stat-title">Total Collected</span>
+            <span class="warden-stat-icon">✅</span>
+          </div>
+          <div class="warden-stat-value" style="color:#047857;" id="fee-stat-collected">₹0</div>
+          <div class="warden-stat-desc" id="fee-stat-paid-count">0 students paid</div>
+        </div>
+
+        <div class="warden-stat-card">
+          <div class="warden-stat-header">
+            <span class="warden-stat-title">Pending / Overdue</span>
+            <span class="warden-stat-icon">⚠️</span>
+          </div>
+          <div class="warden-stat-value" style="color:#b91c1c;" id="fee-stat-pending">₹0</div>
+          <div class="warden-stat-desc" id="fee-stat-pending-count">0 students pending</div>
+        </div>
+      </div>
+
+      <!-- Pending & Overdue Students - Smart 1-Click WhatsApp Reminders -->
+      <div class="warden-table-card" style="margin-bottom:2rem;">
+        <div class="warden-table-toolbar">
+          <div>
+            <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-primary); margin:0;">
+              Pending & Overdue Fee Reminders
+            </h3>
+            <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">
+              Send instant WhatsApp reminders with room # and UPI payment link with 1 click.
+            </p>
+          </div>
+        </div>
+
+        <div style="padding:1.25rem;" id="fee-reminders-list">
+          <p style="text-align:center; color:var(--text-muted);">Loading pending fee reminders...</p>
+        </div>
+      </div>
+
+      <!-- Payment History Ledger -->
+      <div class="warden-table-card">
+        <div class="warden-table-toolbar">
+          <h3 style="font-size:1.05rem; font-weight:800; color:var(--text-primary); margin:0;">
+            Receipts & Payment History Ledger
+          </h3>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="warden-table" id="payments-table">
+            <thead>
+              <tr>
+                <th>Receipt #</th>
+                <th>Student Name</th>
+                <th>Room #</th>
+                <th>Amount Paid</th>
+                <th>Month</th>
+                <th>Payment Mode</th>
+                <th>Transaction Ref</th>
+                <th>Date & Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="payments-table-body">
+              <tr>
+                <td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">
+                  Loading receipts...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =========================================================
+         TAB 8: NOTICE BOARD
+         ========================================================= -->
+    <section class="warden-panel" id="panel-notices">
+      <div class="warden-table-toolbar" style="border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
+        <div>
+          <h2 style="font-size:1.15rem; font-weight:800; color:var(--text-primary); margin:0;">
+            Hostel Notice Board
+          </h2>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin:0;">
+            Publish maintenance alerts, gate timing notifications, and festival notices.
+          </p>
+        </div>
+
+        <button class="btn btn-sm btn-primary" onclick="window.wardenController.openAddNoticeModal()">
+          📢 + Post New Notice
+        </button>
+      </div>
+
+      <div style="padding:1.5rem;" id="notices-list-container">
+        <p style="text-align:center; color:var(--text-muted);">Loading notices...</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================
+       MODALS
+       ========================================================= -->
+
+  <!-- 1. Add/Edit Student Modal -->
+  <div class="modal-backdrop" id="modal-student" style="display:none;">
+    <div class="modal-dialog" style="max-width:580px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-student-title">👤 Add New Student</h3>
+        <button class="modal-close-btn" onclick="window.wardenController.closeModal('modal-student')">×</button>
+      </div>
+      <form id="form-add-student" onsubmit="window.wardenController.handleStudentSubmit(event)">
+        <input type="hidden" id="student-edit-id" name="id" />
+        <div class="modal-body">
+          <div class="warden-form-grid">
+            <div class="warden-form-group">
+              <label for="stu-name">Full Name *</label>
+              <input type="text" id="stu-name" name="name" class="warden-form-input" required />
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-roll">Roll # / Student ID</label>
+              <input type="text" id="stu-roll" name="rollNo" class="warden-form-input" placeholder="SVB-2026-XX" />
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-phone">Mobile Phone *</label>
+              <input type="text" id="stu-phone" name="phone" class="warden-form-input" placeholder="+91 98765 XXXXX" required />
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-email">Email Address</label>
+              <input type="email" id="stu-email" name="email" class="warden-form-input" />
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-room">Assign Room *</label>
+              <select id="stu-room" name="roomNo" class="warden-form-select" onchange="window.wardenController.onStudentRoomSelected(this.value)" required>
+                <!-- populated dynamically -->
+              </select>
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-bed">Bed Slot</label>
+              <select id="stu-bed" name="bedNumber" class="warden-form-select">
+                <option value="Bed 1">Bed 1</option>
+                <option value="Bed 2">Bed 2</option>
+                <option value="Bed 3">Bed 3</option>
+                <option value="Bed 4">Bed 4</option>
+              </select>
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-fee">Monthly Rent Fee (₹) *</label>
+              <input type="number" id="stu-fee" name="monthlyFee" class="warden-form-input" min="1000" step="100" required />
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-fee-status">Initial Fee Status</label>
+              <select id="stu-fee-status" name="feeStatus" class="warden-form-select">
+                <option value="PAID">Paid (Clear)</option>
+                <option value="PENDING">Pending (Due)</option>
+              </select>
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-guardian">Guardian / Parent Name</label>
+              <input type="text" id="stu-guardian" name="guardianName" class="warden-form-input" />
+            </div>
+            <div class="warden-form-group">
+              <label for="stu-guardian-phone">Parent Contact Number</label>
+              <input type="text" id="stu-guardian-phone" name="guardianPhone" class="warden-form-input" />
+            </div>
+          </div>
+          <div style="background:#f1f5f9; padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.8rem; color:#475569; margin-top:0.5rem;">
+            🔐 Student login username and temporary passcode will be automatically generated and provided on submission.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.wardenController.closeModal('modal-student')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-student">Save Student & Admit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. Add/Edit Room Modal -->
+  <div class="modal-backdrop" id="modal-room" style="display:none;">
+    <div class="modal-dialog" style="max-width:520px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-room-title">🛏️ Add New Room</h3>
+        <button class="modal-close-btn" onclick="window.wardenController.closeModal('modal-room')">×</button>
+      </div>
+      <form id="form-add-room" onsubmit="window.wardenController.handleRoomSubmit(event)">
+        <input type="hidden" id="room-edit-id" name="id" />
+        <div class="modal-body">
+          <div class="warden-form-grid">
+            <div class="warden-form-group">
+              <label for="rm-no">Room Number *</label>
+              <input type="text" id="rm-no" name="roomNo" class="warden-form-input" placeholder="e.g. 204" required />
+            </div>
+            <div class="warden-form-group">
+              <label for="rm-floor">Floor Number *</label>
+              <input type="number" id="rm-floor" name="floor" class="warden-form-input" min="0" max="20" value="1" required />
+            </div>
+            <div class="warden-form-group">
+              <label for="rm-sharing">Sharing Type *</label>
+              <select id="rm-sharing" name="sharingType" class="warden-form-select" onchange="window.wardenController.onSharingTypeChange(this.value)">
+                <option value="Single">Single Room (1 Bed)</option>
+                <option value="2-Share" selected>2-Share (2 Beds)</option>
+                <option value="3-Share">3-Share (3 Beds)</option>
+                <option value="4-Share">4-Share (4 Beds)</option>
+              </select>
+            </div>
+            <div class="warden-form-group">
+              <label for="rm-beds">Total Bed Slots</label>
+              <input type="number" id="rm-beds" name="totalBeds" class="warden-form-input" min="1" max="10" value="2" required />
+            </div>
+            <div class="warden-form-group">
+              <label for="rm-rent">Monthly Rent Per Bed (₹) *</label>
+              <input type="number" id="rm-rent" name="monthlyRent" class="warden-form-input" min="1000" step="100" value="8500" required />
+            </div>
+            <div class="warden-form-group">
+              <label for="rm-status">Operational Status</label>
+              <select id="rm-status" name="status" class="warden-form-select">
+                <option value="AVAILABLE">Available</option>
+                <option value="FULL">Full</option>
+                <option value="MAINTENANCE">Under Maintenance</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex; gap:1.5rem; margin-top:0.5rem;">
+            <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; font-weight:600; cursor:pointer;">
+              <input type="checkbox" id="rm-ac" name="hasAC" checked /> Air Conditioned (AC)
+            </label>
+            <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; font-weight:600; cursor:pointer;">
+              <input type="checkbox" id="rm-bath" name="hasAttachedWashroom" checked /> Attached Washroom
+            </label>
+          </div>
+          <div class="warden-form-group" style="margin-top:1rem;">
+            <label for="rm-notes">Room Features / Notes</label>
+            <input type="text" id="rm-notes" name="notes" class="warden-form-input" placeholder="e.g. Balcony view, near WiFi router" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.wardenController.closeModal('modal-room')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-room">Save Room</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. Record Fee Payment Modal -->
+  <div class="modal-backdrop" id="modal-fee-payment" style="display:none;">
+    <div class="modal-dialog" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">💰 Record Fee Payment</h3>
+        <button class="modal-close-btn" onclick="window.wardenController.closeModal('modal-fee-payment')">×</button>
+      </div>
+      <form id="form-record-fee" onsubmit="window.wardenController.handleRecordFeeSubmit(event)">
+        <input type="hidden" id="fee-student-id" name="studentId" />
+        <div class="modal-body">
+          <div style="background:#f8fafc; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1rem; margin-bottom:1rem;">
+            <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted);">STUDENT DUES</div>
+            <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary);" id="fee-modal-student-name">Student Name</div>
+            <div style="font-size:0.85rem; color:var(--text-secondary);" id="fee-modal-student-room">Room 101</div>
+          </div>
+          <div class="warden-form-group">
+            <label for="fee-amount">Payment Amount (₹) *</label>
+            <input type="number" id="fee-amount" name="amount" class="warden-form-input" min="100" step="50" required />
+          </div>
+          <div class="warden-form-group">
+            <label for="fee-month">Month</label>
+            <input type="text" id="fee-month" name="month" class="warden-form-input" value="September 2026" />
+          </div>
+          <div class="warden-form-group">
+            <label for="fee-mode">Payment Mode *</label>
+            <select id="fee-mode" name="paymentMode" class="warden-form-select">
+              <option value="UPI">UPI (Google Pay / PhonePe / Paytm)</option>
+              <option value="CASH">Cash (Desk Counter)</option>
+              <option value="NET_BANKING">Net Banking / IMPS / NEFT</option>
+              <option value="CARD">Debit / Credit Card</option>
+            </select>
+          </div>
+          <div class="warden-form-group">
+            <label for="fee-ref">Transaction Reference / UTR #</label>
+            <input type="text" id="fee-ref" name="transactionRef" class="warden-form-input" placeholder="e.g. UPI/260905/88921" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.wardenController.closeModal('modal-fee-payment')">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="background:#047857;">Generate Receipt & Mark Paid</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. Printable Payment Receipt Modal -->
+  <div class="modal-backdrop" id="modal-receipt" style="display:none;">
+    <div class="modal-dialog" style="max-width:540px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📄 Official Fee Receipt</h3>
+        <button class="modal-close-btn" onclick="window.wardenController.closeModal('modal-receipt')">×</button>
+      </div>
+      <div class="modal-body" id="receipt-content" style="background:#ffffff; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:1.5rem; color:#0f172a;">
+        <!-- Filled dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.wardenController.closeModal('modal-receipt')">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Print Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Student Login Slip Modal -->
+  <div class="modal-backdrop" id="modal-login-slip" style="display:none;">
+    <div class="modal-dialog" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🔐 Student Login Passcode</h3>
+        <button class="modal-close-btn" onclick="window.wardenController.closeModal('modal-login-slip')">×</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#f8fafc; border:2px dashed #94a3b8; border-radius:var(--radius-md); padding:1.5rem; text-align:center;">
+          <div style="font-size:0.75rem; font-weight:800; color:var(--text-muted); text-transform:uppercase;">HOSTEL STUDENT PORTAL</div>
+          <h4 style="font-size:1.25rem; font-weight:800; margin:0.35rem 0 0.75rem;" id="slip-student-name">Student Name</h4>
+          <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1rem;" id="slip-room-info">Room 101</div>
+
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:var(--radius-md); padding:1rem; text-align:left; margin-bottom:1rem;">
+            <div style="margin-bottom:0.5rem;">
+              <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">LOGIN USERNAME:</span>
+              <div style="font-family:monospace; font-size:1.1rem; font-weight:700; color:#0f172a;" id="slip-username">username</div>
+            </div>
+            <div>
+              <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">TEMPORARY PASSCODE:</span>
+              <div style="font-family:monospace; font-size:1.1rem; font-weight:700; color:#0284c7;" id="slip-passcode">passcode</div>
+            </div>
+          </div>
+
+          <p style="font-size:0.75rem; color:#64748b; margin:0;">
+            Share these credentials with the student to access the food announcement board, view fee dues, and submit QR feedback.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.wardenController.closeModal('modal-login-slip')">Close</button>
+        <button type="button" class="btn btn-primary" onclick="window.wardenController.copyStudentCredentials()">📋 Copy Credentials</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Reply / Status Update for Feedback Modal -->
+  <div class="modal-backdrop" id="modal-feedback-reply" style="display:none;">
+    <div class="modal-dialog" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">💬 Respond to Student Feedback</h3>
+        <button class="modal-close-btn" onclick="window.wardenController.closeModal('modal-feedback-reply')">×</button>
+      </div>
+      <form id="form-feedback-reply" onsubmit="window.wardenController.handleFeedbackReplySubmit(event)">
+        <input type="hidden" id="reply-feedback-id" name="id" />
+        <div class="modal-body">
+          <div style="background:#f8fafc; padding:1rem; border-radius:var(--radius-md); margin-bottom:1rem; font-size:0.88rem;" id="reply-original-msg">
+            Feedback message...
+          </div>
+          <div class="warden-form-group">
+            <label for="reply-status">Status *</label>
+            <select id="reply-status" name="status" class="warden-form-select">
+              <option value="ACKNOWLEDGED">Acknowledged</option>
+              <option value="IN_PROGRESS">In Progress / Assigned</option>
+              <option value="RESOLVED">Resolved / Fixed</option>
+            </select>
+          </div>
+          <div class="warden-form-group">
+            <label for="reply-text">Warden Response / Resolution Note</label>
+            <textarea id="reply-text" name="wardenResponse" rows="3" class="warden-form-textarea" placeholder="e.g. Electrician scheduled for 3 PM visit." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.wardenController.closeModal('modal-feedback-reply')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Response</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 7. Post Notice Modal -->
+  <div class="modal-backdrop" id="modal-notice" style="display:none;">
+    <div class="modal-dialog" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">📢 Post New Hostel Notice</h3>
+        <button class="modal-close-btn" onclick="window.wardenController.closeModal('modal-notice')">×</button>
+      </div>
+      <form id="form-post-notice" onsubmit="window.wardenController.handleNoticeSubmit(event)">
+        <div class="modal-body">
+          <div class="warden-form-group">
+            <label for="notice-title">Notice Title *</label>
+            <input type="text" id="notice-title" name="title" class="warden-form-input" placeholder="e.g. Water Tank Cleaning Schedule" required />
+          </div>
+          <div class="warden-form-group">
+            <label for="notice-category">Category</label>
+            <select id="notice-category" name="category" class="warden-form-select">
+              <option value="GENERAL">General Notice</option>
+              <option value="FOOD">Food & Mess</option>
+              <option value="MAINTENANCE">Maintenance / Repairs</option>
+              <option value="GATE_TIMINGS">Gate Timings / Curfew</option>
+              <option value="EVENT">Event / Festival</option>
+            </select>
+          </div>
+          <div class="warden-form-group">
+            <label for="notice-priority">Priority</label>
+            <select id="notice-priority" name="priority" class="warden-form-select">
+              <option value="NORMAL">Normal</option>
+              <option value="HIGH">High Priority</option>
+              <option value="URGENT">Urgent Alert</option>
+            </select>
+          </div>
+          <div class="warden-form-group">
+            <label for="notice-content">Notice Details / Instructions *</label>
+            <textarea id="notice-content" name="content" rows="4" class="warden-form-textarea" placeholder="Provide complete information for residents..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.wardenController.closeModal('modal-notice')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Publish to Notice Board</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 8. Warden Sign-In Overlay (Shown if not logged in) -->
+  <div class="modal-backdrop" id="modal-warden-login" style="display:none; background:rgba(15, 23, 42, 0.75);">
+    <div class="modal-dialog" style="max-width:420px; border-radius:var(--radius-xl);">
+      <div style="text-align:center; padding:1.5rem 1rem 0.5rem;">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:50%; background:#eff6ff; font-size:1.75rem; margin-bottom:0.75rem;">
+          🏢
+        </div>
+        <h2 style="font-size:1.35rem; font-weight:800; color:var(--text-primary); margin-bottom:0.25rem;">
+          Warden Desk Access
+        </h2>
+        <p style="font-size:0.82rem; color:var(--text-secondary); margin:0;">
+          Log in to manage rooms, students, meals, and fee reminders
+        </p>
+      </div>
+      <form id="form-warden-login" onsubmit="window.wardenController.handleLogin(event)" style="padding:1.5rem;">
+        <div class="warden-form-group">
+          <label for="warden-login-user">Username</label>
+          <input type="text" id="warden-login-user" name="username" class="warden-form-input" value="warden" required />
+        </div>
+        <div class="warden-form-group">
+          <label for="warden-login-pass">Password</label>
+          <input type="password" id="warden-login-pass" name="password" class="warden-form-input" value="warden123" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:0.75rem; font-weight:700; margin-top:0.5rem;">
+          Sign In to Warden Portal
+        </button>
+
+        <div style="text-align:center; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border-subtle);">
+          <span style="font-size:0.75rem; color:var(--text-muted);">Demo credentials: <strong>warden / warden123</strong></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/js/config.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/warden.js"></script>
+</body>
+</html>

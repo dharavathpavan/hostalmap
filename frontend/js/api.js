@@ -59,6 +59,41 @@ const API = {
     }
   },
 
+  async put(endpoint, data = {}) {
+    try {
+      const response = await fetch(CONFIG.API_BASE + endpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.message || 'Request failed');
+      }
+      return json;
+    } catch (err) {
+      console.error(`API PUT [${endpoint}] Error:`, err);
+      throw err;
+    }
+  },
+
+  async delete(endpoint) {
+    try {
+      const response = await fetch(CONFIG.API_BASE + endpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        throw new Error(json.message || 'Request failed');
+      }
+      return json;
+    } catch (err) {
+      console.error(`API DELETE [${endpoint}] Error:`, err);
+      throw err;
+    }
+  },
+
   // Hostel APIs
   getHostels(params) {
     return this.get('/hostels', params);
@@ -133,6 +168,103 @@ const API = {
 
   updateReportStatus(id, status) {
     return this.patch(`/admin/reports/${id}/status`, { status });
+  },
+
+  // Warden APIs
+  wardenLogin(username, password, hostelId) {
+    return this.post('/warden/login', { username, password, hostelId });
+  },
+
+  getWardenHostels() {
+    return this.get('/warden/hostels');
+  },
+
+  getWardenDashboard(hostelId) {
+    return this.get(`/warden/hostels/${hostelId}/dashboard`);
+  },
+
+  getWardenProfile(hostelId) {
+    return this.get(`/warden/hostels/${hostelId}/profile`);
+  },
+
+  updateWardenProfile(hostelId, data) {
+    return this.put(`/warden/hostels/${hostelId}/profile`, data);
+  },
+
+  getWardenFood(hostelId, date) {
+    return this.get(`/warden/hostels/${hostelId}/food`, { date });
+  },
+
+  updateWardenFood(hostelId, data) {
+    return this.post(`/warden/hostels/${hostelId}/food`, data);
+  },
+
+  getWardenRooms(hostelId) {
+    return this.get(`/warden/hostels/${hostelId}/rooms`);
+  },
+
+  createWardenRoom(hostelId, data) {
+    return this.post(`/warden/hostels/${hostelId}/rooms`, data);
+  },
+
+  updateWardenRoom(hostelId, roomId, data) {
+    return this.put(`/warden/hostels/${hostelId}/rooms/${roomId}`, data);
+  },
+
+  deleteWardenRoom(hostelId, roomId) {
+    return this.delete(`/warden/hostels/${hostelId}/rooms/${roomId}`);
+  },
+
+  getWardenStudents(hostelId, params = {}) {
+    return this.get(`/warden/hostels/${hostelId}/students`, params);
+  },
+
+  createWardenStudent(hostelId, data) {
+    return this.post(`/warden/hostels/${hostelId}/students`, data);
+  },
+
+  updateWardenStudent(hostelId, studentId, data) {
+    return this.put(`/warden/hostels/${hostelId}/students/${studentId}`, data);
+  },
+
+  deleteWardenStudent(hostelId, studentId) {
+    return this.delete(`/warden/hostels/${hostelId}/students/${studentId}`);
+  },
+
+  resetStudentPasscode(hostelId, studentId) {
+    return this.post(`/warden/hostels/${hostelId}/students/${studentId}/reset-passcode`);
+  },
+
+  getWardenFeedbacks(hostelId, params = {}) {
+    return this.get(`/warden/hostels/${hostelId}/feedbacks`, params);
+  },
+
+  updateFeedbackResponse(feedbackId, data) {
+    return this.patch(`/warden/feedbacks/${feedbackId}`, data);
+  },
+
+  submitStudentFeedback(data) {
+    return this.post('/feedback/submit', data);
+  },
+
+  getWardenFees(hostelId) {
+    return this.get(`/warden/hostels/${hostelId}/fees`);
+  },
+
+  recordWardenPayment(hostelId, data) {
+    return this.post(`/warden/hostels/${hostelId}/fees/record`, data);
+  },
+
+  getWardenNotices(hostelId) {
+    return this.get(`/warden/hostels/${hostelId}/notices`);
+  },
+
+  createWardenNotice(hostelId, data) {
+    return this.post(`/warden/hostels/${hostelId}/notices`, data);
+  },
+
+  deleteWardenNotice(hostelId, noticeId) {
+    return this.delete(`/warden/hostels/${hostelId}/notices/${noticeId}`);
   },
 };
 

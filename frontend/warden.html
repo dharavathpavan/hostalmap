@@ -318,6 +318,43 @@
             <textarea id="prof-description" name="description" rows="3" class="warden-form-textarea"></textarea>
           </div>
 
+          <!-- Hostel Photos & Visual Gallery -->
+          <div style="background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:1.25rem; margin-top:0.5rem; display:flex; flex-direction:column; gap:1rem;">
+            <div>
+              <h3 style="font-size:0.98rem; font-weight:800; color:var(--text-primary); margin:0 0 0.25rem;">
+                📷 Hostel Cover Picture & Public Photo Gallery
+              </h3>
+              <p style="font-size:0.78rem; color:var(--text-muted); margin:0;">
+                These images are showcased prominently on your public hostel profile, search results, and map previews.
+              </p>
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-cover-image">Main Cover Photo URL (Exterior / Front Building)</label>
+              <div style="display:flex; gap:0.5rem;">
+                <input type="url" id="prof-cover-image" name="coverImage" class="warden-form-input" placeholder="https://images.unsplash.com/..." oninput="window.wardenController.onCoverImageInput(this.value)" />
+                <button type="button" class="btn btn-secondary btn-sm" onclick="window.wardenController.setPresetCover('facade')">
+                  Preset Facade
+                </button>
+              </div>
+              <div id="prof-cover-preview-box" style="margin-top:0.5rem; height:140px; border-radius:var(--radius-md); overflow:hidden; background:#1e293b; display:none;">
+                <img id="prof-cover-preview-img" src="" alt="Cover preview" style="width:100%; height:100%; object-fit:cover;" />
+              </div>
+            </div>
+
+            <div class="warden-form-group">
+              <label for="prof-gallery-urls">Gallery Photo URLs (One URL per line)</label>
+              <textarea id="prof-gallery-urls" name="images" rows="3" class="warden-form-textarea" placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."></textarea>
+              <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.4rem;">
+                <span style="font-size:0.75rem; color:var(--text-muted); align-self:center;">Add Preset Gallery Photo:</span>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.addGalleryPreset('dining')">+ Dining Mess</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.addGalleryPreset('study')">+ Study Lounge</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.addGalleryPreset('gym')">+ Terrace & Gym</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.addGalleryPreset('reception')">+ Lobby</button>
+              </div>
+            </div>
+          </div>
+
           <div class="warden-form-group">
             <label for="prof-rules">Hostel Rules & Policies (One rule per line)</label>
             <textarea id="prof-rules" name="rules" rows="4" class="warden-form-textarea" placeholder="Gate closes at 10:30 PM&#10;No smoking or alcohol&#10;Visitors allowed in lounge only"></textarea>
@@ -880,6 +917,24 @@
           <div class="warden-form-group" style="margin-top:1rem;">
             <label for="rm-notes">Room Features / Notes</label>
             <input type="text" id="rm-notes" name="notes" class="warden-form-input" placeholder="e.g. Balcony view, near WiFi router" />
+          </div>
+
+          <!-- Room Picture URL -->
+          <div class="warden-form-group" style="margin-top:1rem; background:var(--bg-subtle); padding:0.9rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+            <label for="rm-image-url" style="font-weight:700;">🖼️ Room Photo URL</label>
+            <div style="display:flex; gap:0.5rem; margin-top:0.35rem;">
+              <input type="url" id="rm-image-url" name="imageUrl" class="warden-form-input" placeholder="https://images.unsplash.com/..." oninput="window.wardenController.onRoomImageInput(this.value)" />
+            </div>
+            <div style="display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.4rem;">
+              <span style="font-size:0.75rem; color:var(--text-muted); align-self:center;">Presets:</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.setPresetRoomPhoto('single')">Single Deluxe</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.setPresetRoomPhoto('double')">2-Share AC</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.setPresetRoomPhoto('triple')">3-Share</button>
+              <button type="button" class="btn btn-secondary btn-sm" style="font-size:0.72rem; padding:0.2rem 0.5rem;" onclick="window.wardenController.setPresetRoomPhoto('four')">4-Share</button>
+            </div>
+            <div id="rm-image-preview-box" style="margin-top:0.5rem; height:120px; border-radius:var(--radius-sm); overflow:hidden; background:#1e293b; display:none;">
+              <img id="rm-image-preview-img" src="" alt="Room preview" style="width:100%; height:100%; object-fit:cover;" />
+            </div>
           </div>
         </div>
         <div class="modal-footer">

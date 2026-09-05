@@ -8,6 +8,11 @@ class HostelDetailController {
     this.hostel = null;
     this.reviews = [];
     this.todayFood = null;
+    this.rooms = [];
+    this.galleryPhotos = [];
+    this.selectedPhotoIndex = 0;
+    this.lightboxPhotos = [];
+    this.lightboxIndex = 0;
   }
 
   async init() {
@@ -46,6 +51,26 @@ class HostelDetailController {
         if (valDisplay) valDisplay.innerText = `${parseFloat(e.target.value).toFixed(1)} / 5`;
       });
     });
+
+    // Keyboard support for photo lightbox
+    window.addEventListener('keydown', (e) => {
+      const lightbox = document.getElementById('photo-lightbox');
+      if (lightbox && lightbox.classList.contains('active')) {
+        if (e.key === 'Escape') this.closeLightbox();
+        else if (e.key === 'ArrowLeft') this.prevLightboxPhoto();
+        else if (e.key === 'ArrowRight') this.nextLightboxPhoto();
+      }
+    });
+
+    // Close lightbox on backdrop click
+    const lightbox = document.getElementById('photo-lightbox');
+    if (lightbox) {
+      lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) {
+          this.closeLightbox();
+        }
+      });
+    }
   }
 
   async loadHostelData() {
@@ -54,24 +79,59 @@ class HostelDetailController {
       mainContainer.innerHTML = `
         <div class="state-container" style="padding: 6rem 1.5rem;">
           <div class="spinner"></div>
-          <p class="state-desc">Loading hostel details, food menus, and student feedback...</p>
+          <p class="state-desc">Loading hostel details, photo gallery, room pictures, and student reviews...</p>
         </div>
       `;
     }
 
     try {
-      const [hostelRes, reviewsRes, foodRes] = await Promise.all([
+      const [hostelRes, reviewsRes, foodRes, roomsRes] = await Promise.all([
         API.getHostelById(this.hostelId),
         API.getReviews(this.hostelId),
         API.getTodayFood(this.hostelId).catch(() => ({ data: null })),
+        API.getHostelRooms(this.hostelId).catch(() => ({ data: [] })),
       ]);
 
       this.hostel = hostelRes.data;
       this.reviews = reviewsRes.data || [];
       this.todayFood = foodRes.data || this.hostel.todayFood;
+      this.rooms = roomsRes.data || [];
+
+      // Build consolidated gallery photos list
+      this.galleryPhotos = [];
+      if (this.hostel.coverImage) {
+        this.galleryPhotos.push({
+          url: this.hostel.coverImage,
+          caption: `${this.hostel.name} — Front Facade & Main Entrance`,
+          label: 'Main Exterior',
+        });
+      }
+      if (Array.isArray(this.hostel.images)) {
+        this.hostel.images.forEach((imgUrl, idx) => {
+          if (imgUrl && imgUrl !== this.hostel.coverImage) {
+            const labels = ['Dining & Mess', 'Study Lounge', 'Corridor & Security', 'Terrace & Gym', 'Reception'];
+            this.galleryPhotos.push({
+              url: imgUrl,
+              caption: `${this.hostel.name} — Facility Photo ${idx + 1}`,
+              label: labels[idx % labels.length] || `Photo ${idx + 1}`,
+            });
+          }
+        });
+      }
+
+      // If no photos at all, provide high quality fallback
+      if (this.galleryPhotos.length === 0) {
+        this.galleryPhotos.push({
+          url: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1200&auto=format&fit=crop&q=80',
+          caption: `${this.hostel.name} — Student Residence`,
+          label: 'Hostel View',
+        });
+      }
+
+      this.selectedPhotoIndex = 0;
 
       // Update page title
-      document.title = `${this.hostel.name} | Student Reviews & Food | Hostel Map`;
+      document.title = `${this.hostel.name} | Student Reviews, Photos & Rooms | Hostel Map`;
 
       this.render();
     } catch (err) {
@@ -122,6 +182,13 @@ class HostelDetailController {
         : 'hostel-type-coliving';
 
     const isSaved = this.isHostelSaved(h.id);
+
+    // Selected main gallery photo
+    const mainPhoto = this.galleryPhotos[this.selectedPhotoIndex] || this.galleryPhotos[0] || {
+      url: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1200&auto=format&fit=crop&q=80',
+      caption: `${h.name} — Student Residence`,
+      label: 'Main View',
+    };
 
     // Facilities pills
     const facilitiesHtml = (h.facilities || [])
@@ -309,6 +376,39 @@ class HostelDetailController {
         </div>
       </div>
 
+      <!-- Hostel Photo Gallery Section -->
+      <div class="hostel-gallery-card">
+        <div class="gallery-main-wrap" id="gallery-main-wrap" onclick="window.detailController.openMainGalleryLightbox()">
+          <img src="${mainPhoto.url}" alt="${h.name}" class="gallery-main-img" id="gallery-main-img" />
+          <div class="gallery-main-overlay">
+            <div class="gallery-main-caption" id="gallery-main-caption">${mainPhoto.caption}</div>
+            <div class="gallery-zoom-badge">
+              <span>🔍 View Fullscreen (${this.galleryPhotos.length} Photos)</span>
+            </div>
+          </div>
+        </div>
+
+        ${
+          this.galleryPhotos.length > 1
+            ? `
+          <div class="gallery-thumbs-row" id="gallery-thumbs-row">
+            ${this.galleryPhotos
+              .map(
+                (p, idx) => `
+              <div class="gallery-thumb-item ${idx === this.selectedPhotoIndex ? 'active' : ''}" 
+                   onclick="window.detailController.selectGalleryThumb(${idx})">
+                <img src="${p.url}" alt="${p.label}" loading="lazy" />
+                <span class="gallery-thumb-label">${p.label}</span>
+              </div>
+            `
+              )
+              .join('')}
+          </div>
+        `
+            : ''
+        }
+      </div>
+
       <!-- Main Grid -->
       <div class="detail-content-grid">
         <!-- Main Column -->
@@ -319,6 +419,27 @@ class HostelDetailController {
             <p style="color:var(--text-secondary); line-height:1.65; font-size:0.95rem;">
               ${h.description || 'Comfortable and student-centric accommodation equipped with essential living amenities, study setup, and secure access.'}
             </p>
+          </div>
+
+          <!-- Available Room Categories & Room Pictures -->
+          <div class="detail-section-card room-pictures-section">
+            <div class="section-heading-row">
+              <div>
+                <h3 class="section-heading">
+                  <span>🛏️ Available Room Categories & Room Pictures</span>
+                </h3>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin:0.25rem 0 0;">
+                  Click any room photo to zoom in high resolution with bed amenities and live vacancy
+                </p>
+              </div>
+              <span style="font-size:0.82rem; font-weight:700; color:var(--primary); background:var(--bg-subtle); padding:0.35rem 0.8rem; border-radius:9999px; border:1px solid var(--border-subtle);">
+                ${this.rooms.length} Room Configurations
+              </span>
+            </div>
+
+            <div class="room-cards-grid">
+              ${this.renderRoomCardsHtml()}
+            </div>
           </div>
 
           <!-- Student Experience Score (Weighted formula from Prompt Section 15 & 16) -->
@@ -705,7 +826,215 @@ class HostelDetailController {
 
   openContactModal() {
     const modal = document.getElementById('contact-modal');
-    if (modal) modal.classList.add('active');
+    if (!modal) return;
+
+    if (this.hostel) {
+      const phoneEl = modal.querySelector('strong');
+      if (phoneEl && (this.hostel.wardenPhone || this.hostel.phone)) {
+        phoneEl.innerText = this.hostel.wardenPhone || this.hostel.phone;
+      }
+      const waLink = modal.querySelector('a[href^="https://wa.me"]');
+      const cleanPhone = (this.hostel.wardenPhone || this.hostel.phone || '919849023145').replace(/[^0-9]/g, '');
+      if (waLink && cleanPhone) {
+        waLink.href = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hi, I saw ${this.hostel.name} on Hostel Map and want to inquire about room availability.`)}`;
+      }
+    }
+
+    modal.classList.add('active');
+  }
+
+  // =========================================================
+  // PHOTO GALLERY & ROOM LIGHTBOX CONTROLLER
+  // =========================================================
+  selectGalleryThumb(index) {
+    if (!this.galleryPhotos || !this.galleryPhotos[index]) return;
+    this.selectedPhotoIndex = index;
+    const photo = this.galleryPhotos[index];
+
+    const mainImg = document.getElementById('gallery-main-img');
+    const caption = document.getElementById('gallery-main-caption');
+    if (mainImg) {
+      mainImg.style.opacity = '0.3';
+      setTimeout(() => {
+        mainImg.src = photo.url;
+        mainImg.style.opacity = '1';
+      }, 150);
+    }
+    if (caption) {
+      caption.innerText = photo.caption;
+    }
+
+    // Update thumb active state
+    const thumbs = document.querySelectorAll('.gallery-thumb-item');
+    thumbs.forEach((t, i) => {
+      if (i === index) t.classList.add('active');
+      else t.classList.remove('active');
+    });
+  }
+
+  openMainGalleryLightbox() {
+    this.openLightbox(this.selectedPhotoIndex, this.galleryPhotos);
+  }
+
+  openRoomLightbox(roomIndex) {
+    const roomPhotos = this.rooms.map((room) => ({
+      url:
+        room.imageUrl ||
+        (room.sharingType === 'Single'
+          ? 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=1000&auto=format&fit=crop&q=80'
+          : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1000&auto=format&fit=crop&q=80'),
+      caption: `${this.hostel.name} — Room ${room.roomNo} (${room.sharingType}, Floor ${room.floor}, ${room.hasAC ? 'AC' : 'Non-AC'})`,
+      label: `Room ${room.roomNo}`,
+    }));
+
+    this.openLightbox(roomIndex, roomPhotos);
+  }
+
+  openLightbox(startIndex, photosList) {
+    if (!photosList || photosList.length === 0) return;
+    this.lightboxPhotos = photosList;
+    this.lightboxIndex = Math.max(0, Math.min(startIndex, photosList.length - 1));
+
+    const modal = document.getElementById('photo-lightbox');
+    if (!modal) return;
+
+    this.updateLightboxDisplay();
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeLightbox() {
+    const modal = document.getElementById('photo-lightbox');
+    if (modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
+  prevLightboxPhoto() {
+    if (!this.lightboxPhotos.length) return;
+    this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxPhotos.length) % this.lightboxPhotos.length;
+    this.updateLightboxDisplay();
+  }
+
+  nextLightboxPhoto() {
+    if (!this.lightboxPhotos.length) return;
+    this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxPhotos.length;
+    this.updateLightboxDisplay();
+  }
+
+  updateLightboxDisplay() {
+    const photo = this.lightboxPhotos[this.lightboxIndex];
+    if (!photo) return;
+
+    const img = document.getElementById('lightbox-img');
+    const caption = document.getElementById('lightbox-caption');
+    const counter = document.getElementById('lightbox-counter');
+    const prevBtn = document.getElementById('lightbox-prev-btn');
+    const nextBtn = document.getElementById('lightbox-next-btn');
+
+    if (img) {
+      img.src = photo.url;
+      img.alt = photo.caption || 'Enlarged hostel photo';
+    }
+    if (caption) {
+      caption.innerText = photo.caption || 'Hostel Photo';
+    }
+    if (counter) {
+      counter.innerText = `${this.lightboxIndex + 1} / ${this.lightboxPhotos.length}`;
+    }
+
+    if (prevBtn && nextBtn) {
+      const showNav = this.lightboxPhotos.length > 1;
+      prevBtn.style.display = showNav ? 'flex' : 'none';
+      nextBtn.style.display = showNav ? 'flex' : 'none';
+    }
+  }
+
+  renderRoomCardsHtml() {
+    if (!this.rooms || this.rooms.length === 0) {
+      return `
+        <div style="grid-column:1/-1; text-align:center; padding:2.5rem 1.5rem; color:var(--text-muted); background:var(--bg-subtle); border-radius:var(--radius-lg); border:1px dashed var(--border-subtle);">
+          <div style="font-size:2.2rem; margin-bottom:0.5rem;">🛏️</div>
+          <div style="font-weight:700; font-size:1rem; color:var(--text-primary);">Room configurations are currently being updated</div>
+          <p style="font-size:0.85rem; margin-top:0.35rem;">Contact the warden directly to enquire about room layout options and today's bed vacancies.</p>
+          <button class="btn btn-primary btn-sm" style="margin-top:1rem;" onclick="window.detailController.openContactModal()">
+            📞 Contact Warden for Room Allotment
+          </button>
+        </div>
+      `;
+    }
+
+    return this.rooms
+      .map((room, idx) => {
+        const roomImg =
+          room.imageUrl ||
+          (room.sharingType === 'Single'
+            ? 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80'
+            : room.sharingType === '3-Share' || room.sharingType === '4-Share'
+            ? 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80'
+            : 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&auto=format&fit=crop&q=80');
+
+        const isAvailable = room.vacantBeds > 0 && room.status !== 'MAINTENANCE';
+        const statusClass =
+          room.status === 'MAINTENANCE'
+            ? 'full'
+            : isAvailable
+            ? room.vacantBeds === 1
+              ? 'filling'
+              : 'available'
+            : 'full';
+        const statusText =
+          room.status === 'MAINTENANCE'
+            ? 'Under Maintenance'
+            : isAvailable
+            ? `${room.vacantBeds} Bed${room.vacantBeds > 1 ? 's' : ''} Vacant`
+            : 'Fully Occupied';
+
+        return `
+        <div class="room-photo-card" id="room-card-display-${room.id}">
+          <div class="room-card-img-wrap" onclick="window.detailController.openRoomLightbox(${idx})" title="Click to view full photo">
+            <img src="${roomImg}" alt="Room ${room.roomNo}" class="room-card-img" loading="lazy" />
+            <div class="room-card-badge-top">
+              Room ${room.roomNo} • Floor ${room.floor}
+            </div>
+            <div class="room-card-hover-hint">
+              <span>🔍</span>
+              <span>View Enlarged Photo</span>
+            </div>
+            <div class="room-card-amenity-tags">
+              ${room.hasAC ? '<span class="room-amenity-tag">❄️ AC Room</span>' : '<span class="room-amenity-tag">Non-AC</span>'}
+              ${room.hasAttachedWashroom ? '<span class="room-amenity-tag">🚿 Attached Bath</span>' : '<span class="room-amenity-tag">Common Bath</span>'}
+            </div>
+          </div>
+
+          <div class="room-card-body">
+            <div class="room-card-header-row">
+              <div>
+                <div class="room-title-text">${room.sharingType} Accommodation</div>
+                <div class="room-floor-tag">Total Capacity: ${room.totalBeds} Students</div>
+              </div>
+              <div class="room-rent-badge">
+                <div class="room-rent-val">₹${room.monthlyRent.toLocaleString('en-IN')}</div>
+                <div class="room-rent-sub">per month</div>
+              </div>
+            </div>
+
+            ${room.notes ? `<div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.45;">💡 ${room.notes}</div>` : ''}
+
+            <div class="room-availability-row">
+              <div class="room-beds-stat">
+                <strong>${room.occupiedBeds || 0}</strong> / ${room.totalBeds} Beds Filled
+              </div>
+              <span class="room-vacant-status ${statusClass}">
+                ${statusText}
+              </span>
+            </div>
+          </div>
+        </div>
+      `;
+      })
+      .join('');
   }
 
   isHostelSaved(id) {

@@ -265,6 +265,10 @@ class WardenController {
       form.description.value = h.description || '';
       form.rules.value = Array.isArray(h.rules) ? h.rules.join('\n') : '';
 
+      if (form.coverImage) form.coverImage.value = h.coverImage || '';
+      if (form.images) form.images.value = Array.isArray(h.images) ? h.images.join('\n') : '';
+      this.onCoverImageInput(h.coverImage || '');
+
       // Update warden user badge in top nav
       const badge = document.getElementById('warden-user-badge');
       if (badge && h.wardenName) {
@@ -272,6 +276,43 @@ class WardenController {
       }
     } catch (err) {
       console.error('Error loading profile:', err);
+    }
+  }
+
+  onCoverImageInput(url) {
+    const box = document.getElementById('prof-cover-preview-box');
+    const img = document.getElementById('prof-cover-preview-img');
+    if (box && img) {
+      if (url && url.startsWith('http')) {
+        img.src = url;
+        box.style.display = 'block';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+  }
+
+  setPresetCover(type) {
+    const form = document.getElementById('form-hostel-profile');
+    if (!form || !form.coverImage) return;
+    const url = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1200&auto=format&fit=crop&q=80';
+    form.coverImage.value = url;
+    this.onCoverImageInput(url);
+  }
+
+  addGalleryPreset(type) {
+    const form = document.getElementById('form-hostel-profile');
+    if (!form || !form.images) return;
+    const presets = {
+      dining: 'https://images.unsplash.com/photo-1574966739987-65e38db0f7ce?w=1000&auto=format&fit=crop&q=80',
+      study: 'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=1000&auto=format&fit=crop&q=80',
+      gym: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1000&auto=format&fit=crop&q=80',
+      reception: 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1000&auto=format&fit=crop&q=80',
+    };
+    const url = presets[type];
+    if (url) {
+      const current = form.images.value.trim();
+      form.images.value = current ? `${current}\n${url}` : url;
     }
   }
 
@@ -283,6 +324,13 @@ class WardenController {
       .split('\n')
       .map((r) => r.trim())
       .filter((r) => r.length > 0);
+
+    const images = form.images
+      ? form.images.value
+          .split('\n')
+          .map((url) => url.trim())
+          .filter((url) => url.length > 0)
+      : undefined;
 
     const payload = {
       name: form.name.value.trim(),
@@ -299,6 +347,8 @@ class WardenController {
       pincode: form.pincode.value.trim(),
       address: form.address.value.trim(),
       description: form.description.value.trim(),
+      coverImage: form.coverImage ? form.coverImage.value.trim() : undefined,
+      images,
       rules,
     };
 
@@ -500,6 +550,18 @@ class WardenController {
 
         return `
         <div class="room-card" id="room-card-${room.id}">
+          ${
+            room.imageUrl
+              ? `
+            <div style="height:120px; margin:-1.5rem -1.5rem 0.85rem -1.5rem; border-radius:var(--radius-lg) var(--radius-lg) 0 0; overflow:hidden; position:relative;">
+              <img src="${room.imageUrl}" alt="Room ${room.roomNo}" style="width:100%; height:100%; object-fit:cover;" loading="lazy" />
+              <div style="position:absolute; bottom:6px; right:8px; background:rgba(0,0,0,0.65); color:#fff; font-size:0.7rem; font-weight:600; padding:2px 7px; border-radius:4px;">
+                📷 Room Photo
+              </div>
+            </div>
+          `
+              : ''
+          }
           <div>
             <div class="room-card-header">
               <div class="room-number-badge">
@@ -586,6 +648,7 @@ class WardenController {
     if (form) form.reset();
     document.getElementById('room-edit-id').value = '';
     document.getElementById('modal-room-title').textContent = '🛏️ Add New Room';
+    this.onRoomImageInput('');
     document.getElementById('modal-room').style.display = 'flex';
   }
 
@@ -607,8 +670,37 @@ class WardenController {
     form.hasAC.checked = room.hasAC;
     form.hasAttachedWashroom.checked = room.hasAttachedWashroom;
     form.notes.value = room.notes || '';
+    if (form.imageUrl) form.imageUrl.value = room.imageUrl || '';
+    this.onRoomImageInput(room.imageUrl || '');
 
     document.getElementById('modal-room').style.display = 'flex';
+  }
+
+  onRoomImageInput(url) {
+    const box = document.getElementById('rm-image-preview-box');
+    const img = document.getElementById('rm-image-preview-img');
+    if (box && img) {
+      if (url && url.startsWith('http')) {
+        img.src = url;
+        box.style.display = 'block';
+      } else {
+        box.style.display = 'none';
+      }
+    }
+  }
+
+  setPresetRoomPhoto(type) {
+    const form = document.getElementById('form-add-room');
+    if (!form || !form.imageUrl) return;
+    const presets = {
+      single: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80',
+      double: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&auto=format&fit=crop&q=80',
+      triple: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800&auto=format&fit=crop&q=80',
+      four: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&auto=format&fit=crop&q=80',
+    };
+    const url = presets[type] || presets.double;
+    form.imageUrl.value = url;
+    this.onRoomImageInput(url);
   }
 
   onSharingTypeChange(type) {
@@ -635,6 +727,7 @@ class WardenController {
       hasAC: form.hasAC.checked,
       hasAttachedWashroom: form.hasAttachedWashroom.checked,
       notes: form.notes.value.trim(),
+      imageUrl: form.imageUrl ? form.imageUrl.value.trim() : undefined,
     };
 
     try {

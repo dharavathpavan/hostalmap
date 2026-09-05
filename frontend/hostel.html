@@ -236,6 +236,24 @@
     </div>
   </div>
 
+  <!-- Fullscreen Photo Lightbox Modal -->
+  <div class="lightbox-backdrop" id="photo-lightbox" role="dialog" aria-modal="true" aria-label="Photo Lightbox">
+    <div class="lightbox-content-box">
+      <div class="lightbox-header-bar">
+        <div class="lightbox-caption" id="lightbox-caption">Hostel Photo</div>
+        <div style="display:flex; align-items:center;">
+          <span class="lightbox-counter" id="lightbox-counter">1 / 1</span>
+          <button class="lightbox-close-btn" id="lightbox-close-btn" onclick="window.detailController.closeLightbox()" title="Close (Esc)">✕</button>
+        </div>
+      </div>
+      <div class="lightbox-img-wrap">
+        <button class="lightbox-nav-btn lightbox-prev-btn" id="lightbox-prev-btn" onclick="window.detailController.prevLightboxPhoto()" title="Previous Photo">❮</button>
+        <img src="" alt="Enlarged photo" class="lightbox-img" id="lightbox-img" />
+        <button class="lightbox-nav-btn lightbox-next-btn" id="lightbox-next-btn" onclick="window.detailController.nextLightboxPhoto()" title="Next Photo">❯</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast-container"></div>
 

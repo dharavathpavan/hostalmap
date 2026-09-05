@@ -103,6 +103,10 @@ const API = {
     return this.get(`/hostels/${id}`);
   },
 
+  getHostelRooms(id) {
+    return this.get(`/hostels/${id}/rooms`);
+  },
+
   searchHostels(query) {
     return this.get('/hostels/search', { q: query });
   },

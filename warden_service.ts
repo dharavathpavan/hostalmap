@@ -11,6 +11,8 @@ export interface Room {
   hasAC: boolean;
   hasAttachedWashroom: boolean;
   status: 'AVAILABLE' | 'FULL' | 'MAINTENANCE';
+  imageUrl?: string;
+  photos?: string[];
   notes?: string;
 }
 
@@ -740,6 +742,62 @@ export function ensureWardenData(db: any): void {
           ];
         }
       }
+
+      // Ensure hostel coverImage and images gallery
+      if (!h.coverImage) {
+        if (h.id === 1) {
+          h.coverImage = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1000&auto=format&fit=crop&q=80';
+          h.images = [
+            'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1567684014761-b65e2e59b9eb?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1497366216548-37526070297c?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1000&auto=format&fit=crop&q=80',
+          ];
+        } else if (h.id === 2) {
+          h.coverImage = 'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=1000&auto=format&fit=crop&q=80';
+          h.images = [
+            'https://images.unsplash.com/photo-1541123437800-1bb1317badc2?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=1000&auto=format&fit=crop&q=80',
+          ];
+        } else if (h.id === 3) {
+          h.coverImage = 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1000&auto=format&fit=crop&q=80';
+          h.images = [
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1000&auto=format&fit=crop&q=80',
+          ];
+        } else {
+          h.coverImage = 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=1000&auto=format&fit=crop&q=80';
+          h.images = [
+            h.coverImage,
+            'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1000&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1567684014761-b65e2e59b9eb?w=1000&auto=format&fit=crop&q=80',
+          ];
+        }
+      }
+    });
+  }
+
+  // Ensure rooms have photo images
+  if (Array.isArray(db.rooms)) {
+    db.rooms.forEach((r: any) => {
+      if (!r.imageUrl) {
+        if (r.sharingType === 'Single') {
+          r.imageUrl = 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&auto=format&fit=crop&q=80';
+        } else if (r.sharingType === '3-Share') {
+          r.imageUrl = 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80';
+        } else if (r.sharingType === '4-Share') {
+          r.imageUrl = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&auto=format&fit=crop&q=80';
+        } else {
+          r.imageUrl = 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80';
+        }
+        r.photos = [r.imageUrl, 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800&auto=format&fit=crop&q=80'];
+      }
     });
   }
 
@@ -955,6 +1013,8 @@ export function registerWardenRoutes(app: Express, getDB: () => any, saveDB: (db
       rules,
       upiId,
       facilityIds,
+      coverImage,
+      images,
     } = req.body;
 
     if (name) hostel.name = name;
@@ -974,6 +1034,8 @@ export function registerWardenRoutes(app: Express, getDB: () => any, saveDB: (db
     if (upiId) hostel.upiId = upiId;
     if (Array.isArray(rules)) hostel.rules = rules;
     if (Array.isArray(facilityIds)) hostel.facilityIds = facilityIds;
+    if (coverImage !== undefined) hostel.coverImage = coverImage;
+    if (Array.isArray(images)) hostel.images = images;
 
     saveDB(db);
     res.json({ success: true, message: 'Hostel profile updated successfully', data: hostel });
@@ -1133,12 +1195,53 @@ export function registerWardenRoutes(app: Express, getDB: () => any, saveDB: (db
     res.json({ success: true, data: enriched });
   });
 
+  // Public endpoint for rooms on hostel profile
+  app.get('/api/hostels/:id/rooms', (req: Request, res: Response) => {
+    const db = getDB();
+    ensureWardenData(db);
+    const hostelId = parseInt(req.params.id);
+
+    const rooms: Room[] = db.rooms.filter((r: Room) => r.hostelId === hostelId);
+    const students: Student[] = db.students.filter((s: Student) => s.hostelId === hostelId && s.isActive);
+
+    const enriched = rooms.map((room) => {
+      const occupants = students.filter((s) => s.roomNo === room.roomNo);
+      const occupiedBeds = occupants.length;
+      const vacantBeds = Math.max(0, room.totalBeds - occupiedBeds);
+      let calculatedStatus = room.status;
+
+      if (room.status !== 'MAINTENANCE') {
+        calculatedStatus = occupiedBeds >= room.totalBeds ? 'FULL' : 'AVAILABLE';
+      }
+
+      return {
+        id: room.id,
+        hostelId: room.hostelId,
+        roomNo: room.roomNo,
+        floor: room.floor,
+        sharingType: room.sharingType,
+        totalBeds: room.totalBeds,
+        occupiedBeds,
+        vacantBeds,
+        monthlyRent: room.monthlyRent,
+        hasAC: room.hasAC,
+        hasAttachedWashroom: room.hasAttachedWashroom,
+        status: calculatedStatus,
+        notes: room.notes,
+        imageUrl: room.imageUrl || (room.sharingType === 'Single' ? 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80'),
+        photos: room.photos || (room.imageUrl ? [room.imageUrl] : []),
+      };
+    });
+
+    res.json({ success: true, data: enriched });
+  });
+
   app.post('/api/warden/hostels/:id/rooms', (req: Request, res: Response) => {
     const db = getDB();
     ensureWardenData(db);
     const hostelId = parseInt(req.params.id);
 
-    const { roomNo, floor, sharingType, totalBeds, monthlyRent, hasAC, hasAttachedWashroom, status, notes } =
+    const { roomNo, floor, sharingType, totalBeds, monthlyRent, hasAC, hasAttachedWashroom, status, notes, imageUrl, photos } =
       req.body;
 
     if (!roomNo || !sharingType || !monthlyRent) {
@@ -1160,6 +1263,14 @@ export function registerWardenRoutes(app: Express, getDB: () => any, saveDB: (db
       else beds = 2;
     }
 
+    let roomImage = imageUrl;
+    if (!roomImage) {
+      if (sharingType === 'Single') roomImage = 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800&auto=format&fit=crop&q=80';
+      else if (sharingType === '3-Share') roomImage = 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&auto=format&fit=crop&q=80';
+      else if (sharingType === '4-Share') roomImage = 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=800&auto=format&fit=crop&q=80';
+      else roomImage = 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=800&auto=format&fit=crop&q=80';
+    }
+
     const newRoom: Room = {
       id: Date.now(),
       hostelId,
@@ -1171,6 +1282,8 @@ export function registerWardenRoutes(app: Express, getDB: () => any, saveDB: (db
       hasAC: hasAC === true || hasAC === 'true',
       hasAttachedWashroom: hasAttachedWashroom === true || hasAttachedWashroom === 'true',
       status: status || 'AVAILABLE',
+      imageUrl: roomImage,
+      photos: Array.isArray(photos) ? photos : [roomImage],
       notes: notes || '',
     };
 
@@ -1191,7 +1304,7 @@ export function registerWardenRoutes(app: Express, getDB: () => any, saveDB: (db
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
 
-    const { roomNo, floor, sharingType, totalBeds, monthlyRent, hasAC, hasAttachedWashroom, status, notes } =
+    const { roomNo, floor, sharingType, totalBeds, monthlyRent, hasAC, hasAttachedWashroom, status, notes, imageUrl, photos } =
       req.body;
 
     if (roomNo) room.roomNo = roomNo;
@@ -1202,6 +1315,8 @@ export function registerWardenRoutes(app: Express, getDB: () => any, saveDB: (db
     if (hasAC !== undefined) room.hasAC = hasAC;
     if (hasAttachedWashroom !== undefined) room.hasAttachedWashroom = hasAttachedWashroom;
     if (status) room.status = status;
+    if (imageUrl !== undefined) room.imageUrl = imageUrl;
+    if (Array.isArray(photos)) room.photos = photos;
     if (notes !== undefined) room.notes = notes;
 
     saveDB(db);

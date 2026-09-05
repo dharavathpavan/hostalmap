@@ -80,6 +80,14 @@ interface Hostel {
   status: 'ACTIVE' | 'INACTIVE' | 'PENDING';
   facilityIds: number[];
   createdAt: string;
+  coverImage?: string;
+  images?: string[];
+  wardenName?: string;
+  wardenPhone?: string;
+  wardenEmail?: string;
+  gateClosingTime?: string;
+  upiId?: string;
+  rules?: string[];
 }
 
 interface DB {
@@ -862,6 +870,14 @@ function mapHostelDTO(h: Hostel, db: DB, userLat?: number, userLng?: number) {
     reviewCount: ratingBreakdown.totalReviews,
     ratingBreakdown,
     facilities: facilityNames,
+    coverImage: h.coverImage || (h.images && h.images.length > 0 ? h.images[0] : null),
+    images: h.images || [],
+    wardenName: h.wardenName || null,
+    wardenPhone: h.wardenPhone || null,
+    wardenEmail: h.wardenEmail || null,
+    gateClosingTime: h.gateClosingTime || null,
+    upiId: h.upiId || null,
+    rules: h.rules || [],
     todayFood: todayFood
       ? {
           id: todayFood.id,

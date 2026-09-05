@@ -171,6 +171,19 @@ class HostelMapController {
       });
     }
 
+    // Scroll listener on hostel-list to apply elevation shadow to sticky header
+    const hostelList = document.getElementById('hostel-list');
+    const explorerHeader = document.querySelector('.explorer-header');
+    if (hostelList && explorerHeader) {
+      hostelList.addEventListener('scroll', () => {
+        if (hostelList.scrollTop > 8) {
+          explorerHeader.classList.add('is-scrolled');
+        } else {
+          explorerHeader.classList.remove('is-scrolled');
+        }
+      }, { passive: true });
+    }
+
     this.initKeyboardNavigation();
   }
 
@@ -657,9 +670,13 @@ class HostelMapController {
     }
   }
 
-  renderHostelList() {
+  renderHostelList(preserveScroll = false) {
     const container = document.getElementById('hostel-list');
     if (!container) return;
+
+    if (!preserveScroll) {
+      container.scrollTop = 0;
+    }
 
     if (this.hostels.length === 0) {
       container.innerHTML = `
@@ -1608,7 +1625,7 @@ class HostelMapController {
       showToast('Added to comparison bar', 'success');
     }
     localStorage.setItem(CONFIG.STORAGE_KEYS.COMPARE_HOSTELS, JSON.stringify(ids));
-    this.renderHostelList();
+    this.renderHostelList(true);
     this.updateCompareDrawer();
   }
 
